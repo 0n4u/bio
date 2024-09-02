@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+	<head>
+		<link rel="icon" href="logo/logo.png" type="image/gif">
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shantell+Sans&display=swap">
+		<title id="dynamic-title">./𝖋𝖊𝖓𝖙𝖆𝖓𝖞𝖑</title>
+		<script src="js/animacao.js" type="text/javascript"></script>
+		<style>
+			/* Basic reset */
+			body,
+			html {
+				margin: 0;
+				padding: 0;
+				height: 100%;
+				overflow: hidden;
+				background-color: black;
+				/* Default background color for initial state */
+			}
+
+			/* Container for the initial image */
+			.initial-screen {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				height: 100vh;
+				width: 100vw;
+				position: absolute;
+				top: 0;
+				left: 0;
+				background-color: black;
+				z-index: 2;
+			}
+
+			/* Style for the image */
+			#start-image {
+				cursor: pointer;
+				width: 100px;
+				/* You can adjust the size as needed */
+			}
+
+			#dynamic-title {
+				font-family: 'Shantell Sans', sans-serif;
+				/* Use your desired font */
+				font-size: 24px;
+				color: #FFFFFF;
+				/* Additional styles if needed */
+			}
+
+			/* Logo Style */
+			.logo {
+				position: absolute;
+				top: 20px;
+				/* Adjust as needed */
+				left: 20px;
+				/* Adjust as needed */
+				width: 150px;
+				/* Adjust the size as needed */
+				height: auto;
+			}
+
+			/* Center the card */
+			.container {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				height: 100vh;
+				position: relative;
+				z-index: 1;
+				display: none;
+				/* Initially hidden */
+			}
+
+			.card-text {
+				font-family: 'Shantell Sans', sans-serif;
+				font-size: 15px;
+				color: #FFFFFF;
+				/* Cor branca */
+				margin-top: 5px;
+				/* Espaçamento entre a imagem e o texto */
+			}
+
+			/* New Card Style */
+			.card {
+				box-sizing: border-box;
+				width: 190px;
+				height: 254px;
+				background: rgba(0, 0, 0, 0.58);
+				border: 1px solid rgb(0, 0, 0);
+				box-shadow: 12px 17px 51px rgba(0, 0, 0, 0.22);
+				backdrop-filter: blur(6px);
+				border-radius: 17px;
+				text-align: center;
+				/* Alinha o texto no centro */
+				cursor: pointer;
+				transition: all 0.5s;
+				display: flex;
+				flex-direction: column;
+				/* Organiza a imagem e o texto em coluna */
+				align-items: center;
+				justify-content: center;
+				user-select: none;
+				font-weight: bolder;
+				color: black;
+			}
+
+			.card:hover {
+				border: 1px solid rgb(255, 255, 255);
+				transform: scale(1.05);
+			}
+
+			.card:active {
+				transform: scale(0.95) rotateZ(1.7deg);
+			}
+
+			.round-image {
+				width: 80px;
+				/* Ajuste o tamanho da imagem */
+				height: 80px;
+				/* Ajuste o tamanho da imagem */
+				border-radius: 50%;
+				/* Torna a imagem redonda */
+				object-fit: cover;
+				/* Ajusta a imagem para cobrir o espaço */
+				margin-bottom: 10px;
+				/* Adiciona uma margem para a imagem */
+				transition: all 0.3s;
+				/* Adiciona uma transição de 0.3 segundos */
+			}
+
+			.round-image:hover {
+				border: 2px solid #fff;
+				/* Altera a borda para branco quando o mouse passa por cima */
+				box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+				/* Adiciona um efeito de sombra */
+				transform: scale(1.06);
+				/* Aumenta a imagem em 5% quando o mouse passa por cima */
+			}
+
+			/* Apply blur effect to background video */
+			.background-video {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				object-fit: cover;
+				z-index: 0;
+				display: none;
+				/* Initially hidden */
+				filter: grayscale(100%) blur(3px);
+				/* Apply black and white filter and blur */
+			}
+
+			.tooltip {
+				text-align: center;
+				/* Alinha o texto no centro */
+				cursor: pointer;
+				transition: all 0.5s;
+				display: flex;
+				flex-direction: column;
+				/* Organiza a imagem e o texto em coluna */
+				align-items: center;
+				justify-content: center;
+				user-select: none;
+				border-bottom: 1px dotted black;
+				/* If you want dots under the hoverable text */
+			}
+
+			/* Tooltip text */
+			.tooltip .tooltiptext {
+				visibility: hidden;
+				width: 120px;
+				color: #fff;
+				text-align: center;
+				padding: 5px 0;
+				border-radius: 6px;
+				font-size: x-small;
+				/* Position the tooltip text - see examples below! */
+				position: absolute;
+				z-index: 1;
+			}
+
+			/* Show the tooltip text when you mouse over the tooltip container */
+			.tooltip:hover .tooltiptext {
+				visibility: visible;
+			}
+
+			/* Particles Container */
+			#particles-js {
+				position: absolute;
+				width: 100%;
+				height: 100%;
+				top: 0;
+				left: 0;
+				z-index: 1;
+				/* Make sure particles are on top of the video */
+				pointer-events: none;
+				/* Allow clicks to pass through */
+			}
+		</style>
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				const titleElement = document.getElementById('dynamic-title');
+				const typingSpeed = 50; // Velocidade de digitação (ms)
+				const text = "./𝖋𝖊𝖓𝖙𝖆𝖓𝖞𝖑 "; // Texto a ser exibido
+				const erasingSpeed = 50; // Velocidade de apagamento (ms)
+				const pauseDuration = 1000; // Duração da pausa antes de recomeçar (ms)
+				let index = 0;
+				let isErasing = false;
+
+				function type() {
+					if (isErasing) {
+						if (index > 0) {
+							titleElement.textContent = text.substring(0, index--);
+							setTimeout(type, erasingSpeed);
+						} else {
+							isErasing = false;
+							setTimeout(type, pauseDuration);
+						}
+					} else {
+						if (index < text.length) {
+							titleElement.textContent = text.substring(0, ++index);
+							setTimeout(type, typingSpeed);
+						} else {
+							isErasing = true;
+							setTimeout(type, pauseDuration);
+						}
+					}
+				}
+				type();
+			});
+		</script>
+		</style>
+	</head>
+	<body>
+		<!-- Logo Image -->
+		<img src="logo/logo.png" alt="Logo" class="logo">
+		<!-- Initial Image Screen -->
+		<div class="initial-screen" id="initial-screen">
+			<img id="start-image" src="imagem/imagem.png" alt="Click" />
+		</div>
+		<!-- Background Video -->
+		<iframe class="background-video" src="https://blackscreen.app/" style="position: absolute; top: 0px; left: 0px; width: 100%; height: 100%;" frameborder="0" id="background-video"></iframe>
+		<!--Vimeo Embed Code Generated by https://www.onetools.me/-->
+		<!-- Particles -->
+		<div id="particles-js"></div>
+		<!-- Centered Card -->
+		<div class="tooltip">
+			<div class="container" id="card-container">
+				<a href="https://discord.gg/vRzgzk8wwH" target="_blank">
+					<!-- Adicione o link aqui -->
+					<div class="card">
+						<img src="user/1.gif" class="round-image">
+						<p class="card-text">./𝖋𝖊𝖓𝖙𝖆𝖓𝖞𝖑</p>
+						<span class="tooltiptext">ｃｌｉｃｋ ｈｅｒｅ</span>
+						<!-- Card content here -->
+					</div>
+				</a>
+			</div>
+			<!-- Background Music -->
+			<audio id="background-music" src="audio/audio.mp3" preload="auto"></audio>
+              <script>
+                var audio = document.getElementById("background-music");
+                audio.volume = 0.2;
+              </script>
+			<!-- Particle JS Configuration -->
+			<script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+			<script>
+				// Function to start the music and show the video and card
+				function start() {
+					const music = document.getElementById('background-music');
+					const initialScreen = document.getElementById('initial-screen');
+                        const backgroundVideo = document.getElementById('background-video');
+					const cardContainer = document.getElementById('card-container');
+					// Play music
+					music.play();
+					// Hide initial screen
+					initialScreen.style.display = 'none';
+					// Show background video and card
+					backgroundVideo.style.display = 'block';
+					cardContainer.style.display = 'flex';
+				}
+				// Add event listener to the start image
+				document.getElementById('start-image').addEventListener('click', start);
+				// Initialize particles.js for snow effect
+				particlesJS('particles-js', {
+					particles: {
+						number: {
+							value: 200, // Number of snowflakes
+							density: {
+								enable: true,
+								value_area: 800
+							}
+						},
+						color: {
+							value: '#551a8b' // Snowflakes color
+						},
+						shape: {
+							type: 'circle',
+							stroke: {
+								width: 0,
+								color: '#000000'
+							}
+						},
+						opacity: {
+							value: 0.7,
+							random: true,
+							anim: {
+								enable: false
+							}
+						},
+						size: {
+							value: 5,
+							random: true,
+							anim: {
+								enable: false
+							}
+						},
+						line_linked: {
+							enable: false
+						},
+						move: {
+							enable: true,
+							speed: 2, // Speed of falling snowflakes
+							direction: 'bottom',
+							random: true,
+							straight: false,
+							out_mode: 'out',
+							bounce: false
+						}
+					},
+					interactivity: {
+						detect_on: 'canvas',
+						events: {
+							onhover: {
+								enable: true,
+								mode: 'repulse' // Snowflakes move away from mouse
+							},
+							onclick: {
+								enable: false
+							},
+							resize: true
+						}
+					},
+					retina_detect: true
+				});
+				// Detect developer tools and reload page
+				(function() {
+					let devtoolsOpened = false;
+					const threshold = 160;
+
+					function detectDevTools() {
+						const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+						const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+						if ((widthThreshold && heightThreshold) || (window.Firebug && window.Firebug.chrome && window.Firebug.chrome.isInitialized) || devtoolsOpened) {
+							devtoolsOpened = true;
+							window.location.reload();
+						}
+					}
+					window.addEventListener('resize', detectDevTools);
+				})();
+			</script>
+	</body>
+</html>
