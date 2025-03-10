@@ -7,19 +7,32 @@ const songs = [
 ];
 
 let currentSongIndex = Math.floor(Math.random() * songs.length);
+let currentAudio = null; // Store the current audio element
 
 function playNextSong() {
-  var audio = new Audio(songs[currentSongIndex]);
+  // Stop the current song if it's playing
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0; // Reset the time to the beginning
+  }
 
-  audio.loop = false;
-  audio.volume = 0.4;
+  // Make sure the next song is different from the current one
+  let nextSongIndex;
+  do {
+    nextSongIndex = Math.floor(Math.random() * songs.length);
+  } while (nextSongIndex === currentSongIndex);
 
-  audio.addEventListener("ended", () => {
-    currentSongIndex = Math.floor(Math.random() * songs.length);
+  currentSongIndex = nextSongIndex;
+  currentAudio = new Audio(songs[currentSongIndex]);
+
+  currentAudio.loop = false;
+  currentAudio.volume = 0.4;
+
+  currentAudio.addEventListener("ended", () => {
     playNextSong();
   });
 
-  audio.play();
+  currentAudio.play();
 }
 
 function userHasClicked() {
