@@ -1,8 +1,8 @@
 window.onload = function () {
-  var currentURL = window.location.href;
+  const currentURL = window.location.href;
+  const newURL = currentURL.replace(/\.html$/, "");
 
-  if (currentURL.endsWith(".html")) {
-    var newURL = currentURL.substring(0, currentURL.length - 5);
+  if (newURL !== currentURL) {
     window.location.replace(newURL);
   }
 };

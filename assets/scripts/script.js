@@ -3,20 +3,17 @@ const songs = [
   "./assets/music/music2.mp3",
   "./assets/music/music3.mp3",
   "./assets/music/music4.mp3",
-  "./assets/music/music5.mp3",
 ];
 
 let currentSongIndex = Math.floor(Math.random() * songs.length);
-let currentAudio = null; // Store the current audio element
+let currentAudio = null;
 
 function playNextSong() {
-  // Stop the current song if it's playing
   if (currentAudio) {
     currentAudio.pause();
-    currentAudio.currentTime = 0; // Reset the time to the beginning
+    currentAudio.currentTime = 0;
   }
 
-  // Make sure the next song is different from the current one
   let nextSongIndex;
   do {
     nextSongIndex = Math.floor(Math.random() * songs.length);
@@ -37,31 +34,25 @@ function playNextSong() {
 
 function userHasClicked() {
   document.getElementById("flexboxcontainer").style.display = "none";
-  document.getElementById("flexboxcontainer").style.width = 0;
-  document.getElementById("flexboxcontainer").style.height = 0;
-
-  const hiddenContainer = document.getElementById("hiddencontainer");
-  hiddenContainer.style.display = "flex";
+  document.getElementById("hiddencontainer").style.display = "flex";
   playNextSong();
   setTimeout(() => {
-    hiddenContainer.style.opacity = 1;
+    document.getElementById("hiddencontainer").style.opacity = 1;
   }, 50);
 }
-
-function updateFlicker() {
-  const randomOpacity = Math.random() * 0.75 + 0.75;
-
-  const flickerTexts = document
-    .querySelectorAll(".flickertext")
-    .forEach((element) => {
-      element.style.setProperty("--rand", randomOpacity);
-    });
-}
-
-setInterval(updateFlicker, 500);
 
 document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("flexboxcontainer")
     .addEventListener("click", userHasClicked);
 });
+
+function updateFlicker() {
+  const randomOpacity = Math.random() * 0.75 + 0.75;
+
+  document.querySelectorAll(".flickertext").forEach((element) => {
+    element.style.setProperty("--rand", randomOpacity);
+  });
+}
+
+setInterval(updateFlicker, 500);
