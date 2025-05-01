@@ -15,7 +15,6 @@ var tinyv = [];
 
 window.addEventListener("load", function () {
   if (document.getElementById) {
-    var i, rats, rlef, rdow;
     for (var i = 0; i < sparkles; i++) {
       var rats = createDiv(3, 3);
       rats.style.visibility = "hidden";
@@ -23,7 +22,7 @@ window.addEventListener("load", function () {
       document.body.appendChild((tiny[i] = rats));
       starv[i] = 0;
       tinyv[i] = 0;
-      var rats = createDiv(5, 5);
+      rats = createDiv(5, 5);
       rats.style.backgroundColor = "transparent";
       rats.style.visibility = "hidden";
       rats.style.zIndex = "999";
@@ -43,24 +42,22 @@ window.addEventListener("load", function () {
 });
 
 function sparkle() {
-  var c;
   if (Math.abs(x - ox) > 1 || Math.abs(y - oy) > 1) {
     ox = x;
     oy = y;
-    for (c = 0; c < sparkles; c++)
+    for (var c = 0; c < sparkles; c++) {
       if (!starv[c]) {
         star[c].style.left = (starx[c] = x) + "px";
         star[c].style.top = (stary[c] = y + 1) + "px";
         star[c].style.clip = "rect(0px, 5px, 5px, 0px)";
-        star[c].childNodes[0].style.backgroundColor = star[ 
-          c
-        ].childNodes[1].style.backgroundColor = newColour();
+        star[c].childNodes[0].style.backgroundColor = star[c].childNodes[1].style.backgroundColor = newColour();
         star[c].style.visibility = "visible";
         starv[c] = 50;
         break;
       }
+    }
   }
-  for (c = 0; c < sparkles; c++) {
+  for (var c = 0; c < sparkles; c++) {
     if (starv[c]) update_star(c);
     if (tinyv[c]) update_tiny(c);
   }
@@ -106,7 +103,9 @@ function update_tiny(i) {
       tiny[i].style.visibility = "hidden";
       tinyv[i] = 0;
     }
-  } else tiny[i].style.visibility = "hidden";
+  } else {
+    tiny[i].style.visibility = "hidden";
+  }
 }
 
 document.onmousemove = mouse;
@@ -128,16 +127,10 @@ function set_scroll() {
   if (typeof self.pageYOffset == "number") {
     sdown = self.pageYOffset;
     sleft = self.pageXOffset;
-  } else if (
-    document.body &&
-    (document.body.scrollTop || document.body.scrollLeft)
-  ) {
+  } else if (document.body && (document.body.scrollTop || document.body.scrollLeft)) {
     sdown = document.body.scrollTop;
     sleft = document.body.scrollLeft;
-  } else if (
-    document.documentElement &&
-    (document.documentElement.scrollTop || document.documentElement.scrollLeft)
-  ) {
+  } else if (document.documentElement && (document.documentElement.scrollTop || document.documentElement.scrollLeft)) {
     sleft = document.documentElement.scrollLeft;
     sdown = document.documentElement.scrollTop;
   } else {
@@ -152,22 +145,16 @@ function set_width() {
   var sw_min = 999999;
   var sh_min = 999999;
   if (document.documentElement && document.documentElement.clientWidth) {
-    if (document.documentElement.clientWidth > 0)
-      sw_min = document.documentElement.clientWidth;
-    if (document.documentElement.clientHeight > 0)
-      sh_min = document.documentElement.clientHeight;
+    if (document.documentElement.clientWidth > 0) sw_min = document.documentElement.clientWidth;
+    if (document.documentElement.clientHeight > 0) sh_min = document.documentElement.clientHeight;
   }
   if (typeof self.innerWidth == "number" && self.innerWidth) {
-    if (self.innerWidth > 0 && self.innerWidth < sw_min)
-      sw_min = self.innerWidth;
-    if (self.innerHeight > 0 && self.innerHeight < sh_min)
-      sh_min = self.innerHeight;
+    if (self.innerWidth > 0 && self.innerWidth < sw_min) sw_min = self.innerWidth;
+    if (self.innerHeight > 0 && self.innerHeight < sh_min) sh_min = self.innerHeight;
   }
   if (document.body.clientWidth) {
-    if (document.body.clientWidth > 0 && document.body.clientWidth < sw_min)
-      sw_min = document.body.clientWidth;
-    if (document.body.clientHeight > 0 && document.body.clientHeight < sh_min)
-      sh_min = document.body.clientHeight;
+    if (document.body.clientWidth > 0 && document.body.clientWidth < sw_min) sw_min = document.body.clientWidth;
+    if (document.body.clientHeight > 0 && document.body.clientHeight < sh_min) sh_min = document.body.clientHeight;
   }
   if (sw_min === 999999 || sh_min == 999999) {
     sw_min = 800;
@@ -187,6 +174,6 @@ function createDiv(height, width) {
 }
 
 function newColour() {
-  const colors = ["#2F4F4F", "#A9A9A9"]; // Darker color palette
+  const colors = ["#2F4F4F", "#A9A9A9"];
   return colors[Math.floor(Math.random() * colors.length)];
 }

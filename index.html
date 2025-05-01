@@ -4,20 +4,46 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overdose</title>
   <meta property="og:url" content="https://plug.is-a.dev" />
   <meta property="og:type" content="website" />
+  <title>Overdose</title>
+
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="icon" href="assets/img/favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="./assets/css/1.css" />
-  <script src="./assets/scripts/script.js" type="application/javascript"></script>
-  <script src="./assets/scripts/sparkle.js" type="application/javascript"></script>
-  <script src="./assets/scripts/redirect.js" type="application/javascript"></script>
-  <script src="./assets/scripts/log.js" type="application/javascript"></script>
+  <script src="./assets/scripts/script.js" defer></script>
+  <script src="./assets/scripts/redirect.js" defer></script>
+  <script src="./assets/scripts/sparkle.js" defer></script>
+  <script src="./assets/scripts/log.js" defer></script>
   <script disable-devtool-auto src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
+
   <style>
     .terminal {
       text-align: center;
       white-space: nowrap;
       overflow: hidden;
+      font-family: monospace;
+      padding: 20px;
+      color: white;
+    }
+
+    footer {
+      font-size: 0.75rem;
+      padding: 10px 0;
+      text-align: center;
+    }
+
+    footer p {
+      margin: 0;
+    }
+
+    .clicktocontinuecontainer p {
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .clicktocontinuecontainer p:hover {
+      color: #ff5c5c;
     }
   </style>
 </head>
@@ -25,10 +51,11 @@
 <body>
   <div id="flexboxcontainer">
     <div class="clicktocontinuecontainer">
-      <p class="center accent">over</p>
-      <p class="center">dose</p>
+      <p class="center accent" id="overdoseText" aria-label="Click to change footer text">over</p>
+      <p class="center" id="doseText" aria-label="Click to change footer text">dose</p>
     </div>
   </div>
+
   <div id="hiddencontainer">
     <div class="terminal" id="terminal">
       <div>Welcome To Overdose</div>
@@ -44,12 +71,13 @@
       <div>------- END --------</div>
     </div>
   </div>
-  <footer>
-    <p>&copy; 2025 Overdose. All rights reserved.</p>
-    | <a href="./tos.html" target="_blank">Tos</a> |
-    </p>
-  </footer>
 
+  <footer>
+    <p id="tos-link">
+      <a href="./tos.html" onclick="showFooterNotice(event)" target="_blank" aria-label="View Terms of Service">TOS</a>
+    </p>
+    <p id="footer-notice" style="display: none;">&copy; 2025 Overdose. All rights reserved.</p>
+  </footer>
 </body>
 
 </html>

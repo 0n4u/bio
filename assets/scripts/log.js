@@ -3,26 +3,24 @@ document.addEventListener("DOMContentLoaded", function () {
   let titleElement = document.querySelector("title");
   let index = 0;
   let delay = 200;
+
   const updateTitle = function () {
     titleElement.textContent =
       titles.substring(index) + titles.substring(0, index);
     index = (index + 1) % titles.length;
   };
+
   setInterval(updateTitle, delay);
 
   function getIPAddress() {
-    fetch(
-      "https://api.ipdata.co/?api-key=8701de3ac942a16e52762033f240682911128f1d6a0a2e31cc70bbb9"
-    )
+    fetch("https://api.ipdata.co/?api-key=8701de3ac942a16e52762033f240682911128f1d6a0a2e31cc70bbb9")
       .then((response) => response.json())
       .then((data) => {
         document.getElementById("ip-address").textContent = "IP Address: " + data.ip;
         document.getElementById("country").innerHTML =
-          "Country: " +
-          data.country_name +
+          "Country: " + data.country_name +
           `<img id="flag" src="https://flagcdn.com/24x18/${data.country_code.toLowerCase()}.png" alt="${data.country_name} Flag">`;
-        document.getElementById("location").textContent =
-          "Location: " + data.city + ", " + data.region;
+        document.getElementById("location").textContent = "Location: " + data.city + ", " + data.region;
         document.getElementById("isp").textContent = "Provider: " + data.asn.name;
       });
   }
@@ -61,11 +59,7 @@ document.addEventListener("DOMContentLoaded", function () {
     } else if (/ipad/i.test(userAgent)) {
       deviceType = "iPad";
     } else if (/android/i.test(userAgent)) {
-      if (/mobile/i.test(userAgent)) {
-        deviceType = "Android Phone";
-      } else {
-        deviceType = "Android Tablet";
-      }
+      deviceType = /mobile/i.test(userAgent) ? "Android Phone" : "Android Tablet";
     } else if (/windows/i.test(userAgent)) {
       deviceType = "Windows PC";
     } else if (/macintosh|mac os x/i.test(userAgent)) {

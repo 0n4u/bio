@@ -41,18 +41,41 @@ function userHasClicked() {
   }, 50);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  document
-    .getElementById("flexboxcontainer")
-    .addEventListener("click", userHasClicked);
-});
+function showFooterNotice(e) {
+  window.open('./tos.html', '_blank');
+  document.getElementById('footer-notice').style.display = 'block';
+  document.getElementById('tos-link').style.display = 'none';
+  e.preventDefault();
+}
+
+function changeFooterText() {
+  document.getElementById('tos-link').innerHTML = '&copy; 2025 Overdose. All rights reserved.';
+  document.getElementById('tos-link').style.cursor = 'default';
+}
 
 function updateFlicker() {
   const randomOpacity = Math.random() * 0.75 + 0.75;
-
   document.querySelectorAll(".flickertext").forEach((element) => {
     element.style.setProperty("--rand", randomOpacity);
   });
 }
 
 setInterval(updateFlicker, 500);
+
+document.addEventListener("DOMContentLoaded", () => {
+  document
+    .getElementById("flexboxcontainer")
+    .addEventListener("click", userHasClicked);
+
+  document
+    .getElementById("overdoseText")
+    .addEventListener("click", changeFooterText);
+
+  document
+    .getElementById("doseText")
+    .addEventListener("click", changeFooterText);
+
+  document
+    .getElementById("tos-link")
+    .addEventListener("click", showFooterNotice);
+});
