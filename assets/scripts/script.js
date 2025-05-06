@@ -39,6 +39,8 @@ function userHasClicked() {
   setTimeout(() => {
     document.getElementById("hiddencontainer").style.opacity = 1;
   }, 50);
+
+  changeFooterText();
 }
 
 function showFooterNotice(e) {
@@ -63,17 +65,7 @@ function updateFlicker() {
 setInterval(updateFlicker, 500);
 
 document.addEventListener("DOMContentLoaded", () => {
-  document
-    .getElementById("flexboxcontainer")
-    .addEventListener("click", userHasClicked);
-
-  document
-    .getElementById("overdoseText")
-    .addEventListener("click", changeFooterText);
-
-  document
-    .getElementById("doseText")
-    .addEventListener("click", changeFooterText);
+  document.body.addEventListener("click", userHasClicked);
 
   document
     .getElementById("tos-link")
