@@ -7,6 +7,7 @@ const songs = [
 
 let currentSongIndex = Math.floor(Math.random() * songs.length);
 let currentAudio = null;
+let hasEntered = false;
 
 function playNextSong() {
   if (currentAudio) {
@@ -21,38 +22,43 @@ function playNextSong() {
 
   currentSongIndex = nextSongIndex;
   currentAudio = new Audio(songs[currentSongIndex]);
-
   currentAudio.loop = false;
   currentAudio.volume = 0.4;
 
-  currentAudio.addEventListener("ended", () => {
-    playNextSong();
-  });
-
+  currentAudio.addEventListener("ended", playNextSong);
   currentAudio.play();
 }
 
 function userHasClicked() {
-  document.getElementById("flexboxcontainer").style.display = "none";
-  document.getElementById("hiddencontainer").style.display = "flex";
-  playNextSong();
+  if (hasEntered) return;
+  hasEntered = true;
+
+  const flexContainer = document.getElementById("flexboxcontainer");
+  const hiddenContainer = document.getElementById("hiddencontainer");
+
+  flexContainer.style.display = "none";
+  hiddenContainer.style.display = "flex";
+
   setTimeout(() => {
-    document.getElementById("hiddencontainer").style.opacity = 1;
+    hiddenContainer.classList.add("show");
   }, 50);
 
+  playNextSong();
   changeFooterText();
 }
 
 function showFooterNotice(e) {
   window.open('./tos.html', '_blank');
-  document.getElementById('footer-notice').style.display = 'block';
+  const footerNotice = document.getElementById('footer-notice');
+  if (footerNotice) footerNotice.style.display = 'block';
   document.getElementById('tos-link').style.display = 'none';
   e.preventDefault();
 }
 
 function changeFooterText() {
-  document.getElementById('tos-link').innerHTML = '&copy; 2025 Overdose. All rights reserved.';
-  document.getElementById('tos-link').style.cursor = 'default';
+  const tos = document.getElementById('tos-link');
+  tos.innerHTML = '&copy; 2025 Overdose. All rights reserved.';
+  tos.style.cursor = 'default';
 }
 
 function updateFlicker() {
@@ -65,9 +71,13 @@ function updateFlicker() {
 setInterval(updateFlicker, 500);
 
 document.addEventListener("DOMContentLoaded", () => {
-  document.body.addEventListener("click", userHasClicked);
+  const flexContainer = document.getElementById("flexboxcontainer");
+  if (flexContainer) {
+    flexContainer.addEventListener("click", userHasClicked);
+  }
 
-  document
-    .getElementById("tos-link")
-    .addEventListener("click", showFooterNotice);
+  const tosLink = document.getElementById("tos-link");
+  if (tosLink) {
+    tosLink.addEventListener("click", showFooterNotice);
+  }
 });

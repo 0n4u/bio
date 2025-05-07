@@ -42,6 +42,7 @@ a:link,
 a:visited {
   color: #b0b0b0;
   text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 a:hover {
@@ -64,7 +65,6 @@ a:active {
   gap: 5px;
   cursor: pointer;
   opacity: 0;
-  transition: 0.3s;
   animation: fadeIn 1s forwards;
 }
 
@@ -72,7 +72,6 @@ a:active {
   0% {
     opacity: 0;
   }
-
   100% {
     opacity: 1;
   }
@@ -135,6 +134,7 @@ footer {
 footer a {
   color: #b0b0b0;
   text-decoration: none;
+  transition: color 0.3s ease;
 }
 
 footer a:hover {
@@ -158,7 +158,14 @@ footer a:hover {
   align-items: center;
   flex-direction: column;
   opacity: 0;
-  transition: opacity 3s ease;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+#hiddencontainer.show {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .terminal {
@@ -178,29 +185,34 @@ footer a:hover {
   object-fit: contain;
 }
 
-#hiddencontainer {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-#hiddencontainer.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-
 .typing::after {
   content: "|";
   animation: blink 1s infinite;
 }
 
 @keyframes blink {
-  0%,
-  100% {
+  0%, 100% {
     opacity: 1;
   }
-
   50% {
     opacity: 0;
+  }
+}
+
+@keyframes flicker {
+  0% {
+    opacity: 1;
+  }
+  20% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
   }
 }
