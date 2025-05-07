@@ -3,7 +3,7 @@ body {
   height: 100%;
   margin: 0;
   background-color: #121212;
-  color: #b0b0b0; 
+  color: #b0b0b0;
   font-family: monospace;
   cursor: url("../img/cur.png"), auto;
   -webkit-user-select: none;
@@ -85,6 +85,7 @@ footer {
   0% {
     opacity: 0;
   }
+
   100% {
     opacity: 1;
   }
@@ -122,9 +123,12 @@ footer {
 }
 
 @keyframes blink {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0;
   }
@@ -134,15 +138,19 @@ footer {
   0% {
     opacity: 1;
   }
+
   20% {
     opacity: 0.3;
   }
+
   50% {
     opacity: 1;
   }
+
   70% {
     opacity: 0.5;
   }
+
   100% {
     opacity: 1;
   }
