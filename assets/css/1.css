@@ -3,7 +3,7 @@ body {
   height: 100%;
   margin: 0;
   background-color: #121212;
-  color: #b0b0b0;
+  color: #b0b0b0; 
   font-family: monospace;
   cursor: url("../img/cur.png"), auto;
   -webkit-user-select: none;
@@ -12,6 +12,9 @@ body {
   user-select: none;
   text-shadow: #000 0 0 50px;
   font-size: clamp(14px, 1.5vw, 18px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   overflow: hidden;
 }
 
@@ -21,11 +24,43 @@ h1 {
   color: #a9a9a9;
 }
 
-hr.solid {
-  margin: 5px 0 0;
-  width: 200px;
-  font-family: Arial, Helvetica, sans-serif;
-  border-color: #333333;
+footer {
+  height: 40px;
+  position: fixed;
+  width: 100%;
+  bottom: 0;
+  text-align: center;
+  padding: 10px;
+  font-size: 12px;
+  z-index: 1;
+}
+
+#flexboxcontainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  position: relative;
+  z-index: 2;
+}
+
+#hiddencontainer {
+  display: none;
+  width: 100%;
+  height: 100%;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  padding-bottom: 40px;
+}
+
+#hiddencontainer.show {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .accent {
@@ -33,39 +68,17 @@ hr.solid {
   text-shadow: #333333 0 0 50px;
 }
 
-.accent1 {
-  color: rgba(59, 59, 59, 0.5);
-  text-shadow: rgba(134, 134, 134, 0.5), 0 0 50px;
-}
-
-a:link,
-a:visited {
-  color: #b0b0b0;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-a:hover {
-  color: #333333;
-  cursor: url("../img/cur.png"), auto;
-}
-
-a:active {
-  color: #b0b0b0;
-}
-
-.flickertext {
-  --rand: 0;
-  animation: flicker 1s infinite;
-}
-
 .clicktocontinuecontainer {
   display: flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   gap: 5px;
   cursor: pointer;
   opacity: 0;
   animation: fadeIn 1s forwards;
+  z-index: 3;
+  position: absolute;
 }
 
 @keyframes fadeIn {
@@ -84,88 +97,6 @@ a:active {
 .center {
   margin: 0;
   text-align: center;
-}
-
-.flex-row {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin: 5px;
-}
-
-.tos-content {
-  margin: 20px;
-  padding: 10px;
-  background-color: #333;
-  color: #b0b0b0;
-  border-radius: 5px;
-  text-align: left;
-}
-
-.tos-content h2 {
-  font-size: 24px;
-  color: #a9a9a9;
-}
-
-.tos-content p {
-  font-size: 14px;
-  color: #b0b0b0;
-}
-
-.tos-content a {
-  color: #b0b0b0;
-  text-decoration: none;
-}
-
-.tos-content a:hover {
-  color: #333333;
-}
-
-footer {
-  color: #b0b0b0;
-  text-align: center;
-  padding: 10px;
-  font-size: 12px;
-  position: fixed;
-  width: 100%;
-  bottom: 0;
-}
-
-footer a {
-  color: #b0b0b0;
-  text-decoration: none;
-  transition: color 0.3s ease;
-}
-
-footer a:hover {
-  color: #333333;
-}
-
-#flexboxcontainer {
-  background-color: transparent;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#hiddencontainer {
-  display: none;
-  width: 100%;
-  height: 100%;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-
-#hiddencontainer.show {
-  display: flex;
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .terminal {
