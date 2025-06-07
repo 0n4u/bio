@@ -2,89 +2,122 @@
 <html lang="en">
 
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta property="og:url" content="https://plug.is-a.dev" />
-  <meta property="og:type" content="website" />
-  <meta property="og:description" content=":3" />
-  <meta name="theme-color" content="#141414" />
-  <title>Overdose</title>
-
-  <link rel="preload" href="./assets/css/1.css" as="style" />
-  <link rel="preload" href="./assets/scripts/script.js" as="script" />
-  <link rel="preload" href="./assets/scripts/sparkle.js" as="script" />
-  <link rel="preload" href="./assets/scripts/log.js" as="script" />
-  <link rel="preload" href="./assets/scripts/redirect.js" as="script" />
-  <link rel="stylesheet" href="./assets/css/1.css" />
-  <script src="./assets/scripts/script.js" defer></script>
-  <script src="./assets/scripts/redirect.js" defer></script>
-  <script src="./assets/scripts/sparkle.js" defer></script>
-  <script src="./assets/scripts/log.js" defer></script>
-  <script disable-devtool-auto src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="og:url" content="https://plug.is-a.dev/vrca" />
+    <meta property="og:type" content="website" />
+    <meta property="og:description" content=":3" />
+    <meta name="theme-color" content="#141414" />
+    <title>Overdose</title>
+    <link rel="preload" href="../assets/css/3.css" as="style" />
+    <link rel="stylesheet" href="../assets/css/3.css" />
+    <link rel="preload" href="../assets/scripts/sparkle.js" as="script" />
+    <link rel="preload" href="../assets/scripts/redirect.js" as="script" />
+    <script src="../assets/scripts/sparkle.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder" defer></script>
 </head>
 
 <body>
-  <main id="flexboxcontainer">
-    <section class="clicktocontinuecontainer" role="button" tabindex="0" aria-label="Click to continue">
-      <p class="center accent" id="overdoseText">over</p>
-      <p class="center" id="doseText">dose</p>
-    </section>
-  </main>
+    <div id="flexboxcontainer">
+        <div class="panel" role="region" aria-label="VRC Asset Archive Browser">
+            <div class="header" id="vrcaHeader" tabindex="0">
+                VRCAssetArchiveBrowser (VRCa Count: 0)
+            </div>
+            <div class="controls" role="search" aria-label="Asset Search Controls">
+                <div class="search-field-group">
+                    <select id="searchField" aria-controls="vrcaContainer" aria-label="Search Field">
+                        <option value="title">Asset Name</option>
+                        <option value="author">Author</option>
+                        <option value="avatarId">Avatar ID</option>
+                        <option value="userId">Author ID</option>
+                    </select>
+                    <button id="sortOrderBtn" class="icon-btn" aria-label="Toggle sort order"
+                        title="Toggle sort order (Ascending/Descending)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M8 4l4 4 4-4M8 20l4-4 4 4M16 4v16M8 20V4"></path>
+                        </svg>
+                    </button>
+                </div>
 
-  <section id="hiddencontainer" style="display: none;" aria-hidden="true">
-    <article class="terminal" id="terminal" aria-label="Terminal output">
-      <div class="ascii-container">
-        <img id="gif" src="assets/img/fluttershy.gif" alt="Fluttershy animated gif" loading="lazy" />
-        <div id="welcome-text" class="typing" aria-label="Welcome message"></div>
-        <div>------- TIME -------</div>
-        <div id="time" aria-label="Time"></div>
-        <div>------- DEVICE & BROWSER -------</div>
-        <div id="device-info" aria-label="Device information"></div>
-        <div>------- IPDATA -------</div>
-        <div id="ip-address" aria-label="IP address"></div>
-        <div id="country" aria-label="Country"></div>
-        <div id="location" aria-label="Location"></div>
-        <div id="isp" aria-label="ISP"></div>
-        <div>------- END --------</div>
-      </div>
-    </article>
+                <div class="search-wrapper">
+                    <input type="text" id="searchBox" aria-label="Enter search term" placeholder="Enter search term..."
+                        list="searchHistory" />
+                    <datalist id="searchHistory"></datalist>
+                    <button id="searchBtn" class="icon-btn" aria-label="Execute Search">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </button>
+                </div>
 
-    <footer id="footer">
-      <p id="footer-text">© 2025 Overdose. All rights reserved.</p>
-    </footer>
-  </section>
+                <button id="refreshBtn" class="icon-btn" aria-label="Refresh Results">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
+                    </svg>
+                </button>
 
-  <script defer>
-    document.addEventListener("DOMContentLoaded", () => {
-      const typeText = (el, text, typeDelay = 200, pauseDelay = 2500, deleteDelay = 100) => {
-        if (!el) return;
-        let i = 0;
+                <div id="loadingIndicator" aria-live="polite" aria-atomic="true" hidden>
+                    <span class="loading-spinner"></span>
+                    <span id="loadingText">Loading...</span>
+                </div>
+            </div>
 
-        const type = () => {
-          if (i <= text.length) {
-            el.textContent = text.slice(0, i++);
-            setTimeout(type, typeDelay);
-          } else {
-            setTimeout(deleteText, pauseDelay);
-          }
+            <div id="bulkToolbar" class="bulk-toolbar">
+                <input type="checkbox" id="bulkSelectAll" aria-label="Select all VRCA items on page" />
+                <label for="bulkSelectAll" class="no-select">Select All</label>
+                <button id="exportSelectedBtn" aria-label="Export selected VRCA items">Export Selected</button>
+                <button id="cancelSearchBtn" aria-label="Cancel current search" style="display: none;">Cancel
+                    Search</button>
+            </div>
+            <div id="vrcaContainer" tabindex="0" role="list" aria-live="polite" aria-atomic="true"
+                aria-relevant="additions">
+                <!-- Cards will be rendered here -->
+            </div>
+            <div id="loadingMoreIndicator" class="loading-more" hidden aria-live="polite" aria-atomic="true">
+                Loading more items <span class="loading-spinner" aria-hidden="true"></span>
+            </div>
+        </div>
+    </div>
+    <script src="./js/data.js" defer></script>
+    <script src="./js/slave.js" defer></script>
+    <script src="./js/app.js" defer></script>
+    <script defer>
+        // Create toast container once on page load
+        const toastContainer = (() => {
+            let container = document.querySelector('.toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'toast-container';
+                container.setAttribute('aria-live', 'assertive');
+                container.setAttribute('role', 'alert');
+                document.body.appendChild(container);
+            }
+            return container;
+        })();
+
+        window.onerror = (msg, url, lineNo, columnNo, error) => {
+            const errorMsg = `Error: ${msg}\nURL: ${url}\nLine: ${lineNo}, Column: ${columnNo}\n${error?.stack || ''}`;
+            console.error(errorMsg);
+
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-error';
+            toast.textContent = `Error: ${msg}`;
+            toast.setAttribute('role', 'alert');
+
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 8000);
+
+            return true; // prevent default error logging
         };
-
-        const deleteText = () => {
-          if (i > 0) {
-            el.textContent = text.slice(0, --i);
-            setTimeout(deleteText, deleteDelay);
-          } else {
-            setTimeout(type, typeDelay);
-          }
-        };
-
-        type();
-      };
-
-      const welcomeEl = document.getElementById("welcome-text");
-      typeText(welcomeEl, "Welcome To Overdose");
-    });
-  </script>
+    </script>
 </body>
 
 </html>
