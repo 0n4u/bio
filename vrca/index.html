@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>VRCAssetArchiveBrowser</title>
+    <link rel="stylesheet" href="../assets/css/3.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder" defer></script>
+</head>
+
+<body>
+    <div id="flexboxcontainer">
+        <div class="panel" role="region" aria-label="VRC Asset Archive Browser">
+            <div class="header" id="vrcaHeader" tabindex="0">
+                VRCAssetArchiveBrowser (VRCa Count: 0)
+            </div>
+
+            <div class="controls" role="search" aria-label="Asset Search Controls">
+                <select id="searchField" aria-controls="vrcaContainer" aria-label="Search Field">
+                    <option value="title">Asset Name</option>
+                    <option value="author">Author</option>
+                    <option value="avatarId">Avatar ID</option>
+                    <option value="userId">Author ID</option>
+                </select>
+
+                <select id="sortField" aria-label="Sort Results">
+                    <option value="dateTime">Sort by Date</option>
+                    <option value="size">Sort by Size</option>
+                    <option value="title">Sort by Title</option>
+                    <option value="author">Sort by Author</option>
+                </select>
+
+                <input type="text" id="searchBox" aria-label="Enter search term" placeholder="Enter search term..." />
+                <button id="searchBtn" aria-label="Execute Search">Search</button>
+                <button id="refreshBtn" aria-label="Refresh Results">Refresh</button>
+
+                <span id="loadingIndicator" aria-live="polite" aria-atomic="true" hidden>
+                    <span class="loading-spinner"></span>Loading...
+                </span>
+            </div>
+
+            <div id="bulkToolbar" style="margin: 0.5em 0; display: flex; align-items: center; gap: 1em;">
+                <input type="checkbox" id="bulkSelectAll" aria-label="Select all VRCA items on page" />
+                <label for="bulkSelectAll" style="user-select: none;">Select All</label>
+                <button id="exportSelectedBtn" aria-label="Export selected VRCA items">Export Selected</button>
+            </div>
+
+            <div id="vrcaContainer" tabindex="0" role="list" aria-live="polite" aria-atomic="true"
+                aria-relevant="additions"></div>
+
+            <div id="loadingMoreIndicator" class="loading-more" hidden aria-live="polite" aria-atomic="true">
+                Loading more items
+                <span class="loading-spinner"></span>
+            </div>
+        </div>
+    </div>
+
+    <script src="./js/data.js" defer></script>
+    <script src="./js/app.js" defer></script>
+    <script>
+        window.onerror = (msg, url, lineNo, columnNo, error) => {
+            alert(`Error: ${msg}\nLine: ${lineNo}, Column: ${columnNo}`);
+            return false;
+        };
+    </script>
+</body>
+
+</html>

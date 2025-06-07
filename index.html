@@ -1,95 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta property="og:url" content="https://plug.is-a.dev" />
-  <meta property="og:type" content="website" />
-  <meta property="og:description" content=":3" />
-  <meta name="theme-color" content="#141414" />
-  <title>Overdose</title>
-
-  <link rel="preload" href="./assets/css/1.css" as="style" />
-  <link rel="preload" href="./assets/scripts/script.js" as="script" />
-  <link rel="preload" href="./assets/scripts/sparkle.js" as="script" />
-  <link rel="preload" href="./assets/scripts/log.js" as="script" />
-  <link rel="preload" href="./assets/scripts/redirect.js" as="script" />
-  <link rel="stylesheet" href="./assets/css/1.css" />
-  <script src="./assets/scripts/redirect.js" defer></script>
-  <script src="./assets/scripts/script.js" defer></script>
-  <script src="./assets/scripts/sparkle.js" defer></script>
-  <script src="./assets/scripts/log.js" defer></script>
-  <script disable-devtool-auto src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VRCAssetArchiveBrowser</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
-
 <body>
-  <div id="flexboxcontainer">
-    <div class="clicktocontinuecontainer">
-      <p class="center accent" id="overdoseText">over</p>
-      <p class="center" id="doseText">dose</p>
-    </div>
+  <header id="vrcaHeader">VRCAssetArchiveBrowser</header>
+
+  <div class="controls">
+    <input type="text" id="searchBox" placeholder="Search..." aria-label="Search VRCA items" />
+    
+    <select id="searchField" aria-label="Search Field">
+      <option value="title">Title</option>
+      <option value="author">Author</option>
+      <option value="description">Description</option>
+      <option value="userId">User ID</option>
+      <option value="avatarId">Avatar ID</option>
+    </select>
+
+    <select id="sortField" aria-label="Sort Field">
+      <option value="title">Title</option>
+      <option value="dateTime">Date</option>
+      <option value="size">Size</option>
+    </select>
+
+    <button id="searchBtn" aria-label="Execute Search">Search</button>
+    <button id="refreshBtn" aria-label="Refresh List">Refresh</button>
+
+    <label id="bulkSelectAllLabel" for="bulkSelectAll">
+      <input type="checkbox" id="bulkSelectAll" aria-label="Select All Items" />
+      Select All
+    </label>
+
+    <button id="exportSelectedBtn" aria-label="Export Selected Items" disabled>Export Selected</button>
   </div>
 
-  <div id="hiddencontainer" style="display: none;">
-    <div class="terminal" id="terminal">
-      <div class="ascii-container">
-        <img id="gif" src="assets/img/fluttershy.gif" alt="Fluttershy animated gif" loading="lazy" />
-        <div id="welcome-text" class="typing"></div>
-        <div>------- TIME -------</div>
-        <div id="time"></div>
-        <div>------- DEVICE & BROWSER -------</div>
-        <div id="device-info"></div>
-        <div>------- IPDATA -------</div>
-        <div id="ip-address"></div>
-        <div id="country"></div>
-        <div id="location"></div>
-        <div id="isp"></div>
-        <div>------- END --------</div>
-      </div>
-    </div>
+  <main id="vrcaContainer" role="list" tabindex="0" aria-live="polite" aria-relevant="additions removals"></main>
 
-    <footer id="footer">
-      <p id="footer-text">© 2025 Overdose. All rights reserved.</p>
-    </footer>
-  </div>
+  <div id="loadingIndicator" style="display:none;">Loading...</div>
 
-  <script>
-    function typinshi(elementId, rawText, typeDelay = 200, pauseDelay = 2500, deleteDelay = 100) {
-      const el = document.getElementById(elementId);
-      if (!el) return;
-
-      const plainText = rawText;
-      let i = 0;
-
-      function type() {
-        if (i <= plainText.length) {
-          el.textContent = plainText.slice(0, i);
-          i++;
-          setTimeout(type, typeDelay);
-        } else {
-          setTimeout(deletinshi, pauseDelay);
-        }
-      }
-
-      function deletinshi() {
-        if (i > 0) {
-          i--;
-          el.textContent = plainText.slice(0, i);
-          setTimeout(deletinshi, deleteDelay);
-        } else {
-          setTimeout(type, typeDelay);
-        }
-      }
-
-      type();
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      typinshi("welcome-text", "Welcome To Overdose", 200, 2500, 100);
-    });
-  </script>
-
+  <script src="app.js" type="module"></script>
 </body>
-
 </html>

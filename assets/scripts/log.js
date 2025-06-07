@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const dateString = now.toLocaleDateString("th-TH", dateOptions).replace(/\//g, "/");
 
       timeElement.textContent = `Date & Time: ${dateString} ${timeString}`;
-    } catch (error) {}
+    } catch (error) { }
   };
 
   const getIPAddress = async () => {
