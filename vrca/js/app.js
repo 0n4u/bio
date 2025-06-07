@@ -14,10 +14,19 @@
   const loadingIndicator = $("loadingIndicator");
   const bulkSelectAllCheckbox = $("bulkSelectAll");
   const exportSelectedBtn = $("exportSelectedBtn");
+  const deleteSelectedBtn = $("deleteSelectedBtn"); // new button for deletion
+  const searchHistoryDropdown = $("searchHistory"); // new dropdown for history
 
   const loadingMoreIndicator = document.createElement('div');
   loadingMoreIndicator.textContent = "Loading more...";
-  loadingMoreIndicator.style.cssText = "text-align:center; padding:8px 0; display:none;";
+  loadingMoreIndicator.style.cssText = `
+    text-align:center; 
+    padding:8px 0; 
+    display:none; 
+    font-style: italic; 
+    color: #666;
+    animation: pulse 1.5s infinite alternate;
+  `;
   container.after(loadingMoreIndicator);
 
   const vrcasData = [...vrcas];
@@ -27,26 +36,12 @@
   let lastQuery = '';
   let workerReady = false;
   let workerSearchQueue = [];
+  let sortAsc = false; // new: ascending/descending toggle
+  let searchHistory = JSON.parse(localStorage.getItem('vrcaSearchHistory') || '[]');
 
   const searchWorker = new Worker('./js/slave.js');
 
-  let ticking = false;
-  container.addEventListener('scroll', () => {
-    if (!ticking) {
-      window.requestAnimationFrame(() => {
-        if (container.scrollHeight - (container.scrollTop + container.clientHeight) <= 150 && (!loadingMoreIndicator.style.display || loadingMoreIndicator.style.display === 'none')) {
-          if (renderedCount < filteredVRCa.length) {
-            loadingMoreIndicator.style.display = 'block';
-            renderMoreItems();
-            loadingMoreIndicator.style.display = 'none';
-          }
-        }
-        ticking = false;
-      });
-      ticking = true;
-    }
-  });
-
+  // --- UTILITIES ---
   const sizeToBytes = sizeStr => {
     if (!sizeStr) return 0;
     const units = { B: 1, KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3 };
@@ -65,7 +60,7 @@
   function setLoading(loading) {
     isLoading = loading;
     loadingIndicator.style.display = loading ? 'inline-block' : 'none';
-    [searchBtn, refreshBtn, searchBoxEl, searchFieldEl, sortFieldEl, bulkSelectAllCheckbox]
+    [searchBtn, refreshBtn, searchBoxEl, searchFieldEl, sortFieldEl, bulkSelectAllCheckbox, deleteSelectedBtn]
       .forEach(el => el.disabled = loading);
     updateExportButtonState();
   }
@@ -74,21 +69,28 @@
     const checkboxes = container.querySelectorAll('.bulkSelectItem');
     const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
     exportSelectedBtn.disabled = checkedCount === 0;
+    deleteSelectedBtn.disabled = checkedCount === 0;
     bulkSelectAllCheckbox.checked = checkedCount === checkboxes.length && checkboxes.length > 0;
     bulkSelectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
   }
 
+  // --- SORTING ---
   const sortResults = () => {
     const field = sortFieldEl.value;
     filteredVRCa.sort((a, b) => {
+      let comp = 0;
       if (field === 'dateTime') {
-        return new Date(b.dateTime.replace('|', '').trim()) - new Date(a.dateTime.replace('|', '').trim());
+        comp = new Date(b.dateTime.replace('|', '').trim()) - new Date(a.dateTime.replace('|', '').trim());
+      } else if (field === 'size') {
+        comp = sizeToBytes(b.size) - sizeToBytes(a.size);
+      } else {
+        comp = (a[field] || '').localeCompare((b[field] || ''), undefined, { sensitivity: 'base' });
       }
-      if (field === 'size') return sizeToBytes(b.size) - sizeToBytes(a.size);
-      return (a[field] || '').localeCompare((b[field] || ''), undefined, { sensitivity: 'base' });
+      return sortAsc ? -comp : comp;
     });
   };
 
+  // --- CREATE CARD ---
   const createCardElement = ({ title, author, description, image, avatarId, userId, dateTime, version, size }, query) => {
     const card = document.createElement('div');
     card.className = 'vrca-card';
@@ -163,6 +165,7 @@
     return card;
   };
 
+  // --- RENDER ---
   const renderMoreItems = () => {
     if (renderedCount >= filteredVRCa.length) return false;
     const fragment = document.createDocumentFragment();
@@ -191,6 +194,48 @@
     updateExportButtonState();
   };
 
+  // --- KEYBOARD NAVIGATION ---
+  container.addEventListener('keydown', e => {
+    const focusableCards = [...container.querySelectorAll('.vrca-card')];
+    if (!focusableCards.length) return;
+
+    const currentIndex = focusableCards.indexOf(document.activeElement);
+    if (currentIndex === -1) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextIndex = Math.min(currentIndex + 1, focusableCards.length - 1);
+      focusableCards[nextIndex].focus();
+    }
+    else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevIndex = Math.max(currentIndex - 1, 0);
+      focusableCards[prevIndex].focus();
+    }
+  });
+
+  // --- SCROLL INFINITE LOAD ---
+  let ticking = false;
+  container.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        if (container.scrollHeight - (container.scrollTop + container.clientHeight) <= 150 &&
+          (!loadingMoreIndicator.style.display || loadingMoreIndicator.style.display === 'none')) {
+          if (renderedCount < filteredVRCa.length) {
+            loadingMoreIndicator.style.display = 'block';
+            setTimeout(() => { // animation delay for UX
+              renderMoreItems();
+              loadingMoreIndicator.style.display = 'none';
+            }, 300);
+          }
+        }
+        ticking = false;
+      });
+      ticking = true;
+    }
+  });
+
+  // --- BULK SELECT AND ACTIONS ---
   container.addEventListener('change', e => {
     if (e.target.classList.contains('bulkSelectItem')) updateExportButtonState();
   });
@@ -216,7 +261,9 @@
 
     const dlAnchor = document.createElement('a');
     dlAnchor.href = url;
-    dlAnchor.download = "vrca_export.json";
+
+    // dynamic filename with timestamp
+    dlAnchor.download = `vrca_export_${new Date().toISOString().slice(0,10)}.json`;
 
     document.body.appendChild(dlAnchor);
     dlAnchor.click();
@@ -224,6 +271,57 @@
     URL.revokeObjectURL(url);
   });
 
+  // New: delete selected with confirmation
+  deleteSelectedBtn.addEventListener('click', () => {
+    const checkboxes = container.querySelectorAll('.bulkSelectItem');
+    const selectedIndexes = [];
+    let idx = 0;
+    for (const cb of checkboxes) {
+      if (cb.checked) selectedIndexes.push(idx);
+      idx++;
+    }
+    if (!selectedIndexes.length) return;
+    if (!confirm(`Delete ${selectedIndexes.length} selected VRCA items? This action is irreversible.`)) return;
+
+    // Remove from data source
+    filteredVRCa = filteredVRCa.filter((_, i) => !selectedIndexes.includes(i));
+    // Also remove from original data to keep in sync
+    for (const i of selectedIndexes.sort((a,b) => b - a)) {
+      vrcasData.splice(i, 1);
+    }
+
+    renderInitialItems();
+  });
+
+  // --- SEARCH HISTORY ---
+  function updateSearchHistory(query) {
+    if (!query || searchHistory.includes(query)) return;
+    searchHistory.unshift(query);
+    if (searchHistory.length > 10) searchHistory.pop();
+    localStorage.setItem('vrcaSearchHistory', JSON.stringify(searchHistory));
+    renderSearchHistory();
+  }
+
+  function renderSearchHistory() {
+    searchHistoryDropdown.innerHTML = '';
+    searchHistory.forEach(term => {
+      const option = document.createElement('option');
+      option.value = term;
+      searchHistoryDropdown.appendChild(option);
+    });
+  }
+
+  renderSearchHistory();
+
+  searchHistoryDropdown.addEventListener('change', () => {
+    const val = searchHistoryDropdown.value;
+    if (val) {
+      searchBoxEl.value = val;
+      vectorSearch(true);
+    }
+  });
+
+  // --- SEARCH ---
   let debounceTimer = null;
   const debounceDelay = 600;
 
@@ -256,7 +354,8 @@
     }
   });
 
-  sortFieldEl.addEventListener('change', () => {
+  sortFieldEl.addEventListener('click', () => { // toggle asc/desc on click
+    sortAsc = !sortAsc;
     sortResults();
     renderInitialItems();
   });
@@ -276,6 +375,7 @@
     renderInitialItems();
   });
 
+  // --- WORKER MESSAGES ---
   searchWorker.onmessage = ({ data }) => {
     const { type, filtered } = data;
     if (type === 'init_done') {
@@ -291,15 +391,34 @@
       sortResults();
       renderInitialItems();
       setLoading(false);
+
+      // save search to history on success
+      if (lastQuery) updateSearchHistory(lastQuery);
+      
+      // fallback: if no results, perform fuzzy filter locally
+      if (!filteredVRCa.length && lastQuery) {
+        const fallbackResults = vrcasData.filter(item =>
+          EMBEDDING_FIELDS.some(field =>
+            item[field]?.toLowerCase().includes(lastQuery.toLowerCase())
+          )
+        );
+        if (fallbackResults.length) {
+          filteredVRCa = fallbackResults;
+          sortResults();
+          renderInitialItems();
+        }
+      }
     }
   };
 
+  // --- INIT ---
   searchWorker.postMessage({ type: 'init', data: { vrcas: vrcasData } });
   setLoading(true);
 
   const init = async () => {
     headerEl.textContent = `VRCAssetArchiveBrowser (VRCa Count: ${vrcasData.length})`;
     exportSelectedBtn.disabled = true;
+    deleteSelectedBtn.disabled = true;
     sortResults();
     renderInitialItems();
   };
