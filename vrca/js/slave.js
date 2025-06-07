@@ -1,50 +1,30 @@
 importScripts('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs');
 importScripts('https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder');
 
-// Load hnswlib wasm + js bundle (hosted on jsDelivr or your preferred CDN)
-importScripts('https://cdn.jsdelivr.net/npm/hnswlib-wasm@0.1.4/dist/hnswlib.min.js');
-
 let model = null;
 let vrcasData = [];
-const EMBEDDING_FIELDS = ['title', 'author', 'description'];
+const embeddingsCache = {};     // { field: Float32Array[][] }
+const embeddingsTensors = {};   // { field: tf.Tensor2d } Persistent tensors for reuse
 
-const embeddingsCache = {};   // { field: Float32Array[][] }
-const annIndices = {};        // { field: HNSWLibIndex instance }
+const EMBEDDING_FIELDS = ['title', 'author', 'description']; // Fields supporting semantic search
 
 self.onmessage = async ({ data: { type, data } }) => {
   if (type === 'init') {
     vrcasData = data.vrcas || [];
     model = await use.load();
 
+    // Precompute embeddings only for fields that exist in data
     for (const field of EMBEDDING_FIELDS) {
       if (!vrcasData.length) break;
 
-      // Extract texts, skip if empty all
       const texts = vrcasData.map(item => item[field] || '');
-      if (texts.every(t => !t)) continue;
+      if (texts.every(t => !t)) continue; // Skip if all empty
 
-      // Compute embeddings
       const embeddingsTensor = await model.embed(texts);
       const embeddingsArray = await embeddingsTensor.array();
-      embeddingsTensor.dispose();
 
       embeddingsCache[field] = embeddingsArray.map(arr => new Float32Array(arr));
-
-      // Build ANN index with hnswlib
-      const dim = embeddingsCache[field][0].length;
-      const numElements = embeddingsCache[field].length;
-      const index = new hnswlib.Index('cosine', dim);
-
-      // Initialize index with max elements, M and efConstruction tuned for speed/accuracy tradeoff
-      index.initIndex(numElements, 16, 200);
-
-      // Add embeddings to index
-      for (let i = 0; i < numElements; i++) {
-        index.addPoint(embeddingsCache[field][i], i);
-      }
-      index.setEf(50); // Query-time parameter: tradeoff between speed and accuracy
-
-      annIndices[field] = index;
+      embeddingsTensors[field] = embeddingsTensor; // Keep tensor alive (do NOT dispose here)
     }
 
     postMessage({ type: 'init_done' });
@@ -57,11 +37,12 @@ self.onmessage = async ({ data: { type, data } }) => {
   const normalizedQuery = query.trim().toLowerCase();
 
   if (!normalizedQuery) {
+    // Empty query returns full data immediately
     postMessage({ type: 'result', filtered: vrcasData });
     return;
   }
 
-  // Fallback substring search for ID fields or tiny datasets
+  // Quick substring search for IDs or very small datasets
   if (['userId', 'avatarId'].includes(searchField) || vrcasData.length < 20) {
     const filtered = vrcasData.filter(item =>
       (item[searchField] || '').toLowerCase().includes(normalizedQuery)
@@ -71,8 +52,9 @@ self.onmessage = async ({ data: { type, data } }) => {
   }
 
   try {
-    if (!annIndices[searchField]) {
-      // No ANN index, fallback substring search
+    // Validate field embeddings exist
+    if (!embeddingsTensors[searchField]) {
+      // No embeddings for this field: fallback substring search
       const filtered = vrcasData.filter(item =>
         (item[searchField] || '').toLowerCase().includes(normalizedQuery)
       );
@@ -80,39 +62,35 @@ self.onmessage = async ({ data: { type, data } }) => {
       return;
     }
 
-    // Embed query
+    // Embed query once
     const queryEmbeddingTensor = await model.embed([query]);
-    const queryEmbedding = await queryEmbeddingTensor.array();
+
+    // Get precomputed embeddings tensor for the field
+    const fieldEmbeddingsTensor = embeddingsTensors[searchField];
+
+    // Compute cosine similarity (via dot product since embeddings are normalized)
+    const scoresTensor = tf.matMul(queryEmbeddingTensor, fieldEmbeddingsTensor, false, true);
+    const scores = await scoresTensor.data();
+
+    // Dispose intermediate tensors promptly (keep cached tensors alive)
     queryEmbeddingTensor.dispose();
+    scoresTensor.dispose();
 
-    // ANN search for top 10 neighbors
-    const topK = 10;
-    const index = annIndices[searchField];
-    const neighbors = index.searchKnn(queryEmbedding[0], topK);
+    // Sort results by descending similarity score
+    const results = vrcasData.map((vrca, i) => ({ vrca, score: scores[i] }));
+    results.sort((a, b) => b.score - a.score);
 
-    // neighbors = { neighbors: [idx], distances: [float] }
-    // Map back to VRCA items with scores (distance here is cosine distance)
-    const results = neighbors.neighbors.map((idx, i) => ({
-      vrca: vrcasData[idx],
-      score: 1 - neighbors.distances[i], // convert cosine distance to similarity
-    }));
-
-    // Filter out low similarity results, threshold = 0.4
-    const filteredResults = results.filter(r => r.score >= 0.4);
-
-    if (filteredResults.length === 0) {
-      // If none above threshold, fallback substring search
+    // If best match is below threshold, fallback to substring search
+    if (results.length === 0 || results[0].score < 0.4) {
       const filtered = vrcasData.filter(item =>
         (item[searchField] || '').toLowerCase().includes(normalizedQuery)
       );
       postMessage({ type: 'result', filtered });
     } else {
-      // Return sorted results by descending score
-      filteredResults.sort((a, b) => b.score - a.score);
-      postMessage({ type: 'result', filtered: filteredResults.map(r => r.vrca) });
+      postMessage({ type: 'result', filtered: results.map(r => r.vrca) });
     }
   } catch (error) {
-    // On error fallback substring search
+    // On error fallback to substring search to ensure resiliency
     const filtered = vrcasData.filter(item =>
       (item[searchField] || '').toLowerCase().includes(normalizedQuery)
     );
@@ -120,12 +98,13 @@ self.onmessage = async ({ data: { type, data } }) => {
   }
 };
 
+// OPTIONAL: Cleanup function on worker termination or re-init to free memory
 self.onclose = () => {
-  for (const index of Object.values(annIndices)) {
-    index.clearIndex();
+  for (const tensor of Object.values(embeddingsTensors)) {
+    tensor.dispose();
   }
   Object.keys(embeddingsCache).forEach(k => delete embeddingsCache[k]);
-  Object.keys(annIndices).forEach(k => delete annIndices[k]);
+  Object.keys(embeddingsTensors).forEach(k => delete embeddingsTensors[k]);
   model = null;
   vrcasData = [];
 };

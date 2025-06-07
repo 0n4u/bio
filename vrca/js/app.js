@@ -34,15 +34,12 @@
   container.addEventListener('scroll', () => {
     if (!ticking) {
       window.requestAnimationFrame(() => {
-        const threshold = 150;
-        if (
-          container.scrollHeight - (container.scrollTop + container.clientHeight) <= threshold &&
-          loadingMoreIndicator.style.display === 'none' &&
-          renderedCount < filteredVRCa.length
-        ) {
-          loadingMoreIndicator.style.display = 'block';
-          renderMoreItems();
-          loadingMoreIndicator.style.display = 'none';
+        if (container.scrollHeight - (container.scrollTop + container.clientHeight) <= 150 && (!loadingMoreIndicator.style.display || loadingMoreIndicator.style.display === 'none')) {
+          if (renderedCount < filteredVRCa.length) {
+            loadingMoreIndicator.style.display = 'block';
+            renderMoreItems();
+            loadingMoreIndicator.style.display = 'none';
+          }
         }
         ticking = false;
       });
