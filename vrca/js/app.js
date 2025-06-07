@@ -31,19 +31,33 @@
 
   searchWorker.onmessage = ({ data }) => {
     const { type, filtered } = data;
-    if (type === 'init_done') {
-      workerReady = true;
-      workerSearchQueue.forEach(({ query, searchField }) =>
-        searchWorker.postMessage({ type: 'search', data: { query, searchField } })
-      );
-      workerSearchQueue = [];
-    }
-    if (type === 'result') {
-      filteredVRCa = filtered;
-      sortResults();
-      renderInitialItems();
+    try {
+      if (type === 'init_done') {
+        workerReady = true;
+        workerSearchQueue.forEach(({ query, searchField }) =>
+          searchWorker.postMessage({ type: 'search', data: { query, searchField } })
+        );
+        workerSearchQueue = [];
+      } else if (type === 'result') {
+        if (!Array.isArray(filtered)) throw new Error("Invalid filtered result from worker");
+        filteredVRCa = filtered;
+        sortResults();
+        renderInitialItems();
+      }
+    } catch (err) {
+      console.error("Worker processing error:", err);
+      filteredVRCa = [];
+      container.innerHTML = '<div class="empty-msg" tabindex="0">An error occurred while processing results.</div>';
+    } finally {
       setLoading(false);
     }
+  };
+
+  searchWorker.onerror = e => {
+    console.error("Worker error:", e.message);
+    filteredVRCa = [];
+    container.innerHTML = '<div class="empty-msg" tabindex="0">Search failed due to a worker error.</div>';
+    setLoading(false);
   };
 
   searchWorker.postMessage({ type: 'init', data: { vrcas: vrcasData } });
@@ -155,7 +169,8 @@
 
   exportSelectedBtn.addEventListener('click', () => {
     const selected = [...container.querySelectorAll('.bulkSelectItem')]
-      .map((cb, i) => cb.checked ? filteredVRCa[i] : null).filter(Boolean);
+      .map(cb => cb.checked ? filteredVRCa.find(item => item.avatarId === cb.dataset.avatarid) : null)
+      .filter(Boolean);
 
     if (!selected.length) return;
     const blob = new Blob([JSON.stringify(selected, null, 2)], { type: 'application/json' });
@@ -193,7 +208,6 @@
   });
 
   searchFieldEl.addEventListener('change', vectorSearch);
-
   searchBtn.addEventListener('click', vectorSearch);
   refreshBtn.addEventListener('click', () => {
     searchBoxEl.value = '';
