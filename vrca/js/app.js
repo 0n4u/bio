@@ -1,6 +1,5 @@
 (async () => {
   const ITEMS_PER_PAGE = 10;
-  const EMBEDDING_FIELDS = ['title', 'author', 'description'];
 
   const $ = id => document.getElementById(id);
   const headerEl = $("vrcaHeader");
@@ -24,6 +23,8 @@
   let filteredVRCa = [...vrcasData];
   let renderedCount = 0;
   let debounceTimeout = null;
+  let lastTypedTime = 0;
+  const TYPING_DEBOUNCE_DELAY = 600;
 
   const searchWorker = new Worker('./js/slave.js');
   let workerReady = false;
@@ -95,34 +96,35 @@
 
   const renderMoreItems = () => {
     if (renderedCount >= filteredVRCa.length) return false;
-    const query = searchBoxEl.value.trim();
+    const query = searchBoxEl.value.trim().toLowerCase();
     const items = filteredVRCa.slice(renderedCount, renderedCount + ITEMS_PER_PAGE);
-
-    const html = items.map(({ title, author, description, image, avatarId, userId, dateTime, version, size }) => `
-      <div class="vrca-card" role="listitem" tabindex="0">
-        <input type="checkbox" class="bulkSelectItem" data-avatarid="${avatarId}" aria-label="Select VRCA item" />
-        <a href="${image}" target="_blank" rel="noopener noreferrer">
-          <img class="vrca-image" loading="lazy" src="${image}" alt="Image of ${title}" onerror="this.src='fallback.png';" />
-        </a>
-        <div class="vrca-details">
-          <div class="vrca-title">
-            <a href="https://vrchat.com/home/avatar/${avatarId}" target="_blank" rel="noopener noreferrer" class="avatar-link">
-              ${highlightText(title, query)}
-            </a>
-            <div class="author-line">
-              By <a href="https://vrchat.com/home/user/${userId}" target="_blank" rel="noopener noreferrer" class="author-link">
-                ${highlightText(author, query)}
+    const html = items.map(item => {
+      const { title, author, description, image, avatarId, userId, dateTime, version, size } = item;
+      return `
+        <div class="vrca-card" role="listitem" tabindex="0">
+          <input type="checkbox" class="bulkSelectItem" data-avatarid="${avatarId}" aria-label="Select VRCA item" />
+          <a href="${image}" target="_blank" rel="noopener noreferrer">
+            <img class="vrca-image" loading="lazy" src="${image}" alt="Image of ${title}" onerror="this.src='fallback.png';" />
+          </a>
+          <div class="vrca-details">
+            <div class="vrca-title">
+              <a href="https://vrchat.com/home/avatar/${avatarId}" target="_blank" rel="noopener noreferrer" class="avatar-link">
+                ${highlightText(title, query)}
               </a>
+              <div class="author-line">
+                By <a href="https://vrchat.com/home/user/${userId}" target="_blank" rel="noopener noreferrer" class="author-link">
+                  ${highlightText(author, query)}
+                </a>
+              </div>
             </div>
+            <div class="meta-right">
+              <div class="date-time">${dateTime}</div>
+              <div>${version} | ${size}</div>
+            </div>
+            <div class="vrca-description">Description: ${highlightText(description, query)}</div>
           </div>
-          <div class="meta-right">
-            <div class="date-time">${dateTime}</div>
-            <div>${version} | ${size}</div>
-          </div>
-          <div class="vrca-description">Description: ${highlightText(description, query)}</div>
-        </div>
-      </div>`).join('');
-
+        </div>`;
+    }).join('');
     container.insertAdjacentHTML('beforeend', html);
     renderedCount += items.length;
     updateExportButtonState();
@@ -139,51 +141,12 @@
   };
 
   const updateExportButtonState = () => {
-    const checkboxes = container.querySelectorAll('.bulkSelectItem');
-    const checked = [...checkboxes].filter(cb => cb.checked);
+    const cmb = [...container.querySelectorAll('.bulkSelectItem')];
+    const checked = cmb.filter(cb => cb.checked);
     exportSelectedBtn.disabled = checked.length === 0;
-    bulkSelectAllCheckbox.checked = checked.length === checkboxes.length;
-    bulkSelectAllCheckbox.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
+    bulkSelectAllCheckbox.checked = checked.length === cmb.length;
+    bulkSelectAllCheckbox.indeterminate = checked.length > 0 && checked.length < cmb.length;
   };
-
-  container.addEventListener('scroll', () => {
-    if (container.scrollHeight - (container.scrollTop + container.clientHeight) <= 150 &&
-      loadingMoreIndicator.style.display === 'none') {
-      if (renderedCount < filteredVRCa.length) {
-        loadingMoreIndicator.style.display = "block";
-        renderMoreItems();
-        loadingMoreIndicator.style.display = "none";
-      }
-    }
-  });
-
-  container.addEventListener('change', e => {
-    if (e.target.classList.contains('bulkSelectItem')) updateExportButtonState();
-  });
-
-  bulkSelectAllCheckbox.addEventListener('change', () => {
-    const checked = bulkSelectAllCheckbox.checked;
-    container.querySelectorAll('.bulkSelectItem').forEach(cb => cb.checked = checked);
-    updateExportButtonState();
-  });
-
-  exportSelectedBtn.addEventListener('click', () => {
-    const selected = [...container.querySelectorAll('.bulkSelectItem')]
-      .map(cb => cb.checked ? filteredVRCa.find(item => item.avatarId === cb.dataset.avatarid) : null)
-      .filter(Boolean);
-
-    if (!selected.length) return;
-    const blob = new Blob([JSON.stringify(selected, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const dlAnchor = Object.assign(document.createElement('a'), {
-      href: url,
-      download: "vrca_export.json"
-    });
-    document.body.appendChild(dlAnchor);
-    dlAnchor.click();
-    document.body.removeChild(dlAnchor);
-    URL.revokeObjectURL(url);
-  });
 
   const vectorSearch = () => {
     const query = searchBoxEl.value.trim();
@@ -197,16 +160,25 @@
     }
   };
 
+  // Debounce on input and allow Enter to force search
   searchBoxEl.addEventListener('input', () => {
+    lastTypedTime = Date.now();
     clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(vectorSearch, 300);
+    debounceTimeout = setTimeout(() => {
+      if (Date.now() - lastTypedTime >= TYPING_DEBOUNCE_DELAY) {
+        vectorSearch();
+      }
+    }, TYPING_DEBOUNCE_DELAY);
   });
 
-  sortFieldEl.addEventListener('change', () => {
-    sortResults();
-    renderInitialItems();
+  searchBoxEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      clearTimeout(debounceTimeout);
+      vectorSearch();
+    }
   });
 
+  sortFieldEl.addEventListener('change', () => { sortResults(); renderInitialItems(); });
   searchFieldEl.addEventListener('change', vectorSearch);
   searchBtn.addEventListener('click', vectorSearch);
   refreshBtn.addEventListener('click', () => {
