@@ -3,19 +3,24 @@ importScripts('https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentenc
 
 let model = null;
 let vrcasData = [];
-let embeddingsCache = {};
+const embeddingsCache = {};
 
-function dotProduct(a, b) {
+const dotProduct = (a, b) => {
   let sum = 0;
-  for (let i = 0; i < a.length; i++) sum += a[i] * b[i];
+  for (let i = 0, len = a.length; i < len; i++) sum += a[i] * b[i];
   return sum;
-}
+};
 
 async function cacheEmbeddings(field) {
-  if (!model || embeddingsCache[field]?.length === vrcasData.length) return;
-  const texts = vrcasData.map(v => v[field] || "");
-  const embeddingsTensor = await model.embed(texts);
-  embeddingsCache[field] = await embeddingsTensor.array();
+  if (!model) throw new Error('Model not loaded');
+  if (embeddingsCache[field]?.length === vrcasData.length) return;
+
+  const texts = vrcasData.map(item => item[field] || '');
+
+  await tf.tidy(async () => {
+    const embeddingsTensor = await model.embed(texts);
+    embeddingsCache[field] = await embeddingsTensor.array();
+  });
 }
 
 self.onmessage = async ({ data: { type, data } }) => {
@@ -29,36 +34,39 @@ self.onmessage = async ({ data: { type, data } }) => {
   if (type !== 'search') return;
 
   const { query, searchField } = data;
+  const normalizedQuery = (query || '').toLowerCase();
 
-  if (!query) {
+  if (!normalizedQuery) {
     postMessage({ type: 'result', filtered: vrcasData });
     return;
   }
 
-  const lowerQ = query.toLowerCase();
+  if (['userId', 'avatarId'].includes(searchField) || vrcasData.length < 20) {
+    const filtered = vrcasData.filter(item =>
+      (item[searchField] || '').toLowerCase().includes(normalizedQuery)
+    );
+    postMessage({ type: 'result', filtered });
+    return;
+  }
 
   try {
-    if (['userId', 'avatarId'].includes(searchField) || vrcasData.length < 20) {
-      const filtered = vrcasData.filter(item =>
-        (item[searchField] || '').toLowerCase().includes(lowerQ)
-      );
-      postMessage({ type: 'result', filtered });
-      return;
-    }
-
     await cacheEmbeddings(searchField);
-    const queryVec = await (await model.embed([query])).array();
 
-    const scores = vrcasData.map((vrca, i) => ({
-      vrca,
-      score: dotProduct(queryVec[0], embeddingsCache[searchField][i])
-    }));
+    const scores = await tf.tidy(async () => {
+      const queryEmbeddingTensor = await model.embed([query]);
+      const queryEmbeddingArray = await queryEmbeddingTensor.array();
+
+      return vrcasData.map((item, idx) => ({
+        vrca: item,
+        score: dotProduct(queryEmbeddingArray[0], embeddingsCache[searchField][idx])
+      }));
+    });
 
     scores.sort((a, b) => b.score - a.score);
 
-    if (scores[0]?.score < 0.4) {
+    if (scores.length === 0 || scores[0].score < 0.4) {
       const filtered = vrcasData.filter(item =>
-        (item[searchField] || '').toLowerCase().includes(lowerQ)
+        (item[searchField] || '').toLowerCase().includes(normalizedQuery)
       );
       postMessage({ type: 'result', filtered });
     } else {
@@ -66,7 +74,7 @@ self.onmessage = async ({ data: { type, data } }) => {
     }
   } catch {
     const filtered = vrcasData.filter(item =>
-      (item[searchField] || '').toLowerCase().includes(lowerQ)
+      (item[searchField] || '').toLowerCase().includes(normalizedQuery)
     );
     postMessage({ type: 'result', filtered });
   }

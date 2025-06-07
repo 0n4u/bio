@@ -3,6 +3,7 @@
   const EMBEDDING_FIELDS = ['title', 'author', 'description'];
 
   const $ = id => document.getElementById(id);
+
   const headerEl = $("vrcaHeader");
   const container = $("vrcaContainer");
   const searchFieldEl = $("searchField");
@@ -14,52 +15,37 @@
   const bulkSelectAllCheckbox = $("bulkSelectAll");
   const exportSelectedBtn = $("exportSelectedBtn");
 
-  const loadingMoreIndicator = Object.assign(document.createElement('div'), {
-    textContent: "Loading more...",
-    style: "text-align: center; padding: 8px 0; display: none;"
-  });
+  const loadingMoreIndicator = document.createElement('div');
+  loadingMoreIndicator.textContent = "Loading more...";
+  loadingMoreIndicator.style.cssText = "text-align:center; padding:8px 0; display:none;";
   container.after(loadingMoreIndicator);
 
   const vrcasData = [...vrcas];
   let filteredVRCa = [...vrcasData];
   let renderedCount = 0;
-
-  const searchWorker = new Worker('./js/slave.js');
+  let isLoading = false;
+  let lastQuery = '';
   let workerReady = false;
   let workerSearchQueue = [];
 
-  let debounceTimeout = null;
-  let isTyping = false;
-  let lastQuery = '';
+  const searchWorker = new Worker('./js/slave.js');
 
-  searchWorker.onmessage = ({ data }) => {
-    const { type, filtered } = data;
-    if (type === 'init_done') {
-      workerReady = true;
-      workerSearchQueue.forEach(({ query, searchField }) =>
-        searchWorker.postMessage({ type: 'search', data: { query, searchField } })
-      );
-      workerSearchQueue = [];
-      setLoading(false);
+  let ticking = false;
+  container.addEventListener('scroll', () => {
+    if (!ticking) {
+      window.requestAnimationFrame(() => {
+        if (container.scrollHeight - (container.scrollTop + container.clientHeight) <= 150 && (!loadingMoreIndicator.style.display || loadingMoreIndicator.style.display === 'none')) {
+          if (renderedCount < filteredVRCa.length) {
+            loadingMoreIndicator.style.display = 'block';
+            renderMoreItems();
+            loadingMoreIndicator.style.display = 'none';
+          }
+        }
+        ticking = false;
+      });
+      ticking = true;
     }
-    if (type === 'result') {
-      filteredVRCa = filtered;
-      sortResults();
-      renderInitialItems();
-      setLoading(false);
-      isTyping = false;
-    }
-  };
-
-  searchWorker.postMessage({ type: 'init', data: { vrcas: vrcasData } });
-  setLoading(true);
-
-  const setLoading = isLoading => {
-    loadingIndicator.style.display = isLoading ? 'inline-block' : 'none';
-    [searchBtn, refreshBtn, searchBoxEl, searchFieldEl, sortFieldEl, bulkSelectAllCheckbox]
-      .forEach(el => el.disabled = isLoading);
-    updateExportButtonState();
-  };
+  });
 
   const sizeToBytes = sizeStr => {
     if (!sizeStr) return 0;
@@ -68,11 +54,29 @@
     return parseFloat(val) * (units[unit.toUpperCase()] || 1);
   };
 
+  const escapeRegExp = string => string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
   const highlightText = (text, query) => {
     if (!query) return text;
-    const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-    return text.replace(regex, m => `<span class="highlight">${m}</span>`);
+    const regex = new RegExp(escapeRegExp(query), 'gi');
+    return text.replace(regex, match => `<span class="highlight">${match}</span>`);
   };
+
+  function setLoading(loading) {
+    isLoading = loading;
+    loadingIndicator.style.display = loading ? 'inline-block' : 'none';
+    [searchBtn, refreshBtn, searchBoxEl, searchFieldEl, sortFieldEl, bulkSelectAllCheckbox]
+      .forEach(el => el.disabled = loading);
+    updateExportButtonState();
+  }
+
+  function updateExportButtonState() {
+    const checkboxes = container.querySelectorAll('.bulkSelectItem');
+    const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+    exportSelectedBtn.disabled = checkedCount === 0;
+    bulkSelectAllCheckbox.checked = checkedCount === checkboxes.length && checkboxes.length > 0;
+    bulkSelectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
+  }
 
   const sortResults = () => {
     const field = sortFieldEl.value;
@@ -85,38 +89,91 @@
     });
   };
 
+  const createCardElement = ({ title, author, description, image, avatarId, userId, dateTime, version, size }, query) => {
+    const card = document.createElement('div');
+    card.className = 'vrca-card';
+    card.setAttribute('role', 'listitem');
+    card.tabIndex = 0;
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'bulkSelectItem';
+    checkbox.setAttribute('data-avatarid', avatarId);
+    checkbox.setAttribute('aria-label', `Select VRCA item ${title}`);
+    card.appendChild(checkbox);
+
+    const imageLink = document.createElement('a');
+    imageLink.href = image;
+    imageLink.target = '_blank';
+    imageLink.rel = 'noopener noreferrer';
+
+    const img = document.createElement('img');
+    img.className = 'vrca-image';
+    img.loading = 'lazy';
+    img.src = image;
+    img.alt = `Image of ${title}`;
+    img.onerror = () => { img.src = 'fallback.png'; };
+
+    imageLink.appendChild(img);
+    card.appendChild(imageLink);
+
+    const details = document.createElement('div');
+    details.className = 'vrca-details';
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'vrca-title';
+
+    const avatarLink = document.createElement('a');
+    avatarLink.href = `https://vrchat.com/home/avatar/${avatarId}`;
+    avatarLink.target = '_blank';
+    avatarLink.rel = 'noopener noreferrer';
+    avatarLink.className = 'avatar-link';
+    avatarLink.innerHTML = highlightText(title, query);
+
+    titleDiv.appendChild(avatarLink);
+
+    const authorLine = document.createElement('div');
+    authorLine.className = 'author-line';
+    authorLine.innerHTML = `By <a href="https://vrchat.com/home/user/${userId}" target="_blank" rel="noopener noreferrer" class="author-link">${highlightText(author, query)}</a>`;
+    titleDiv.appendChild(authorLine);
+
+    details.appendChild(titleDiv);
+
+    const metaRight = document.createElement('div');
+    metaRight.className = 'meta-right';
+
+    const dateDiv = document.createElement('div');
+    dateDiv.className = 'date-time';
+    dateDiv.textContent = dateTime;
+    metaRight.appendChild(dateDiv);
+
+    const versionSizeDiv = document.createElement('div');
+    versionSizeDiv.textContent = `${version} | ${size}`;
+    metaRight.appendChild(versionSizeDiv);
+
+    details.appendChild(metaRight);
+
+    const descDiv = document.createElement('div');
+    descDiv.className = 'vrca-description';
+    descDiv.innerHTML = `Description: ${highlightText(description, query)}`;
+    details.appendChild(descDiv);
+
+    card.appendChild(details);
+
+    return card;
+  };
+
   const renderMoreItems = () => {
     if (renderedCount >= filteredVRCa.length) return false;
+    const fragment = document.createDocumentFragment();
     const query = searchBoxEl.value.trim();
-    const items = filteredVRCa.slice(renderedCount, renderedCount + ITEMS_PER_PAGE);
 
-    const html = items.map(({ title, author, description, image, avatarId, userId, dateTime, version, size }) => `
-      <div class="vrca-card" role="listitem" tabindex="0">
-        <input type="checkbox" class="bulkSelectItem" data-avatarid="${avatarId}" aria-label="Select VRCA item" />
-        <a href="${image}" target="_blank" rel="noopener noreferrer">
-          <img class="vrca-image" loading="lazy" src="${image}" alt="Image of ${title}" onerror="this.src='fallback.png';" />
-        </a>
-        <div class="vrca-details">
-          <div class="vrca-title">
-            <a href="https://vrchat.com/home/avatar/${avatarId}" target="_blank" rel="noopener noreferrer" class="avatar-link">
-              ${highlightText(title, query)}
-            </a>
-            <div class="author-line">
-              By <a href="https://vrchat.com/home/user/${userId}" target="_blank" rel="noopener noreferrer" class="author-link">
-                ${highlightText(author, query)}
-              </a>
-            </div>
-          </div>
-          <div class="meta-right">
-            <div class="date-time">${dateTime}</div>
-            <div>${version} | ${size}</div>
-          </div>
-          <div class="vrca-description">Description: ${highlightText(description, query)}</div>
-        </div>
-      </div>`).join('');
-
-    container.insertAdjacentHTML('beforeend', html);
-    renderedCount += items.length;
+    for (let i = renderedCount; i < Math.min(renderedCount + ITEMS_PER_PAGE, filteredVRCa.length); i++) {
+      const card = createCardElement(filteredVRCa[i], query);
+      fragment.appendChild(card);
+    }
+    container.appendChild(fragment);
+    renderedCount += Math.min(ITEMS_PER_PAGE, filteredVRCa.length - renderedCount);
     updateExportButtonState();
     return true;
   };
@@ -125,31 +182,14 @@
     container.innerHTML = '';
     renderedCount = 0;
     if (!renderMoreItems()) {
-      container.innerHTML = '<div class="empty-msg" tabindex="0">No results found.</div>';
+      const emptyMsg = document.createElement('div');
+      emptyMsg.className = 'empty-msg';
+      emptyMsg.tabIndex = 0;
+      emptyMsg.textContent = 'No results found.';
+      container.appendChild(emptyMsg);
     }
     updateExportButtonState();
   };
-
-  const updateExportButtonState = () => {
-    const checkboxes = container.querySelectorAll('.bulkSelectItem');
-    const checked = [...checkboxes].filter(cb => cb.checked);
-    exportSelectedBtn.disabled = checked.length === 0;
-    bulkSelectAllCheckbox.checked = checked.length === checkboxes.length && checkboxes.length > 0;
-    bulkSelectAllCheckbox.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
-  };
-
-  container.addEventListener('scroll', () => {
-    if (container.scrollHeight - (container.scrollTop + container.clientHeight) <= 150 &&
-      loadingMoreIndicator.style.display === 'none') {
-      if (renderedCount < filteredVRCa.length) {
-        loadingMoreIndicator.style.display = "block";
-        setTimeout(() => {
-          renderMoreItems();
-          loadingMoreIndicator.style.display = "none";
-        }, 0);
-      }
-    }
-  });
 
   container.addEventListener('change', e => {
     if (e.target.classList.contains('bulkSelectItem')) updateExportButtonState();
@@ -170,17 +210,22 @@
       idx++;
     }
     if (!selected.length) return;
+
     const blob = new Blob([JSON.stringify(selected, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const dlAnchor = Object.assign(document.createElement('a'), {
-      href: url,
-      download: "vrca_export.json"
-    });
+
+    const dlAnchor = document.createElement('a');
+    dlAnchor.href = url;
+    dlAnchor.download = "vrca_export.json";
+
     document.body.appendChild(dlAnchor);
     dlAnchor.click();
     document.body.removeChild(dlAnchor);
     URL.revokeObjectURL(url);
   });
+
+  let debounceTimer = null;
+  const debounceDelay = 600;
 
   const vectorSearch = (forceSearch = false) => {
     const query = searchBoxEl.value.trim();
@@ -194,22 +239,18 @@
 
     if (!forceSearch && query === lastQuery) return;
     lastQuery = query;
-    isTyping = true;
     setLoading(true);
     searchWorker.postMessage({ type: 'search', data: { query, searchField } });
   };
 
   searchBoxEl.addEventListener('input', () => {
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(() => {
-      if (!isTyping) return;
-      vectorSearch();
-    }, 600);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => vectorSearch(), debounceDelay);
   });
 
   searchBoxEl.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
-      clearTimeout(debounceTimeout);
+      clearTimeout(debounceTimer);
       vectorSearch(true);
       searchBoxEl.blur();
     }
@@ -234,6 +275,27 @@
     sortResults();
     renderInitialItems();
   });
+
+  searchWorker.onmessage = ({ data }) => {
+    const { type, filtered } = data;
+    if (type === 'init_done') {
+      workerReady = true;
+      workerSearchQueue.forEach(({ query, searchField }) =>
+        searchWorker.postMessage({ type: 'search', data: { query, searchField } })
+      );
+      workerSearchQueue = [];
+      setLoading(false);
+    }
+    if (type === 'result') {
+      filteredVRCa = filtered;
+      sortResults();
+      renderInitialItems();
+      setLoading(false);
+    }
+  };
+
+  searchWorker.postMessage({ type: 'init', data: { vrcas: vrcasData } });
+  setLoading(true);
 
   const init = async () => {
     headerEl.textContent = `VRCAssetArchiveBrowser (VRCa Count: ${vrcasData.length})`;
