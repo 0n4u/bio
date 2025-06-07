@@ -4,26 +4,19 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta property="og:url" content="https://plug.is-a.dev" />
+    <meta property="og:url" content="https://plug.is-a.dev/vrca" />
     <meta property="og:type" content="website" />
     <meta property="og:description" content=":3" />
     <meta name="theme-color" content="#141414" />
     <title>Overdose</title>
-
     <link rel="preload" href="../assets/css/3.css" as="style" />
     <link rel="stylesheet" href="../assets/css/3.css" />
-
     <link rel="preload" href="../assets/scripts/sparkle.js" as="script" />
     <link rel="preload" href="../assets/scripts/redirect.js" as="script" />
-
     <script src="../assets/scripts/sparkle.js" defer></script>
-    <script src="../assets/scripts/redirect.js" defer></script>
-    
-
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder" defer></script>
 </head>
-
 
 <body>
     <div id="flexboxcontainer">
@@ -31,53 +24,98 @@
             <div class="header" id="vrcaHeader" tabindex="0">
                 VRCAssetArchiveBrowser (VRCa Count: 0)
             </div>
-
             <div class="controls" role="search" aria-label="Asset Search Controls">
-                <select id="searchField" aria-controls="vrcaContainer" aria-label="Search Field">
-                    <option value="title">Asset Name</option>
-                    <option value="author">Author</option>
-                    <option value="avatarId">Avatar ID</option>
-                    <option value="userId">Author ID</option>
-                </select>
+                <div class="search-field-group">
+                    <select id="searchField" aria-controls="vrcaContainer" aria-label="Search Field">
+                        <option value="title">Asset Name</option>
+                        <option value="author">Author</option>
+                        <option value="avatarId">Avatar ID</option>
+                        <option value="userId">Author ID</option>
+                    </select>
+                    <button id="sortOrderBtn" class="icon-btn" aria-label="Toggle sort order"
+                        title="Toggle sort order (Ascending/Descending)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M8 4l4 4 4-4M8 20l4-4 4 4M16 4v16M8 20V4"></path>
+                        </svg>
+                    </button>
+                </div>
 
-                <select id="sortField" aria-label="Sort Results">
-                    <option value="dateTime">Sort by Date</option>
-                    <option value="size">Sort by Size</option>
-                    <option value="title">Sort by Title</option>
-                    <option value="author">Sort by Author</option>
-                </select>
+                <div class="search-wrapper">
+                    <input type="text" id="searchBox" aria-label="Enter search term" placeholder="Enter search term..."
+                        list="searchHistory" />
+                    <datalist id="searchHistory"></datalist>
+                    <button id="searchBtn" class="icon-btn" aria-label="Execute Search">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </button>
+                </div>
 
-                <input type="text" id="searchBox" aria-label="Enter search term" placeholder="Enter search term..." />
-                <button id="searchBtn" aria-label="Execute Search">Search</button>
-                <button id="refreshBtn" aria-label="Refresh Results">Refresh</button>
+                <button id="refreshBtn" class="icon-btn" aria-label="Refresh Results">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
+                    </svg>
+                </button>
 
-                <span id="loadingIndicator" aria-live="polite" aria-atomic="true" hidden>
-                    <span class="loading-spinner"></span>Loading...
-                </span>
+                <div id="loadingIndicator" aria-live="polite" aria-atomic="true" hidden>
+                    <span class="loading-spinner"></span>
+                    <span id="loadingText">Loading...</span>
+                </div>
             </div>
 
-            <div id="bulkToolbar" style="margin: 0.5em 0; display: flex; align-items: center; gap: 1em;">
+            <div id="bulkToolbar" class="bulk-toolbar">
                 <input type="checkbox" id="bulkSelectAll" aria-label="Select all VRCA items on page" />
-                <label for="bulkSelectAll" style="user-select: none;">Select All</label>
+                <label for="bulkSelectAll" class="no-select">Select All</label>
                 <button id="exportSelectedBtn" aria-label="Export selected VRCA items">Export Selected</button>
+                <button id="cancelSearchBtn" aria-label="Cancel current search" style="display: none;">Cancel
+                    Search</button>
             </div>
-
             <div id="vrcaContainer" tabindex="0" role="list" aria-live="polite" aria-atomic="true"
-                aria-relevant="additions"></div>
-
+                aria-relevant="additions">
+                <!-- Cards will be rendered here -->
+            </div>
             <div id="loadingMoreIndicator" class="loading-more" hidden aria-live="polite" aria-atomic="true">
-                Loading more items
-                <span class="loading-spinner"></span>
+                Loading more items <span class="loading-spinner" aria-hidden="true"></span>
             </div>
         </div>
     </div>
-
     <script src="./js/data.js" defer></script>
+    <script src="./js/slave.js" defer></script>
     <script src="./js/app.js" defer></script>
-    <script>
+    <script defer>
+        // Create toast container once on page load
+        const toastContainer = (() => {
+            let container = document.querySelector('.toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.className = 'toast-container';
+                container.setAttribute('aria-live', 'assertive');
+                container.setAttribute('role', 'alert');
+                document.body.appendChild(container);
+            }
+            return container;
+        })();
+
         window.onerror = (msg, url, lineNo, columnNo, error) => {
-            alert(`Error: ${msg}\nLine: ${lineNo}, Column: ${columnNo}`);
-            return false;
+            const errorMsg = `Error: ${msg}\nURL: ${url}\nLine: ${lineNo}, Column: ${columnNo}\n${error?.stack || ''}`;
+            console.error(errorMsg);
+
+            const toast = document.createElement('div');
+            toast.className = 'toast toast-error';
+            toast.textContent = `Error: ${msg}`;
+            toast.setAttribute('role', 'alert');
+
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 8000);
+
+            return true; // prevent default error logging
         };
     </script>
 </body>
