@@ -249,11 +249,9 @@
   exportSelectedBtn.addEventListener('click', () => {
     const checkboxes = container.querySelectorAll('.bulkSelectItem');
     const selected = [];
-    let idx = 0;
-    for (const cb of checkboxes) {
-      if (cb.checked && filteredVRCa[idx]) selected.push(filteredVRCa[idx]);
-      idx++;
-    }
+    checkboxes.forEach((cb, i) => {
+      if (cb.checked) selected.push(filteredVRCa[i]);
+    });
     if (!selected.length) return;
 
     const blob = new Blob([JSON.stringify(selected, null, 2)], { type: 'application/json' });
@@ -275,20 +273,24 @@
   deleteSelectedBtn.addEventListener('click', () => {
     const checkboxes = container.querySelectorAll('.bulkSelectItem');
     const selectedIndexes = [];
-    let idx = 0;
-    for (const cb of checkboxes) {
-      if (cb.checked) selectedIndexes.push(idx);
-      idx++;
-    }
+    checkboxes.forEach((cb, i) => {
+      if (cb.checked) selectedIndexes.push(i);
+    });
     if (!selectedIndexes.length) return;
     if (!confirm(`Delete ${selectedIndexes.length} selected VRCA items? This action is irreversible.`)) return;
 
-    // Remove from data source
+    // Remove from filtered data by selected indexes
     filteredVRCa = filteredVRCa.filter((_, i) => !selectedIndexes.includes(i));
-    // Also remove from original data to keep in sync
-    for (const i of selectedIndexes.sort((a,b) => b - a)) {
-      vrcasData.splice(i, 1);
-    }
+
+    // Remove those from original data as well by matching unique id or avatarId
+    const selectedAvatarIds = selectedIndexes.map(i => filteredVRCa[i]?.avatarId).filter(Boolean);
+    // Instead, remove from vrcasData by matching avatarIds in selected indexes before filtering:
+    selectedIndexes.forEach(i => {
+      const avatarIdToRemove = filteredVRCa[i]?.avatarId;
+      if (!avatarIdToRemove) return;
+      const origIndex = vrcasData.findIndex(item => item.avatarId === avatarIdToRemove);
+      if (origIndex !== -1) vrcasData.splice(origIndex, 1);
+    });
 
     renderInitialItems();
   });
@@ -394,7 +396,7 @@
 
       // save search to history on success
       if (lastQuery) updateSearchHistory(lastQuery);
-      
+
       // fallback: if no results, perform fuzzy filter locally
       if (!filteredVRCa.length && lastQuery) {
         const fallbackResults = vrcasData.filter(item =>
