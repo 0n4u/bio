@@ -1,5 +1,6 @@
 (async () => {
   const ITEMS_PER_PAGE = 10;
+  const EMBEDDING_FIELDS = ['title', 'author', 'description'];
 
   const $ = id => document.getElementById(id);
   const headerEl = $("vrcaHeader");
@@ -22,46 +23,36 @@
   const vrcasData = [...vrcas];
   let filteredVRCa = [...vrcasData];
   let renderedCount = 0;
-  let debounceTimeout = null;
-  let lastTypedTime = 0;
-  const TYPING_DEBOUNCE_DELAY = 600;
 
   const searchWorker = new Worker('./js/slave.js');
   let workerReady = false;
   let workerSearchQueue = [];
 
+  let debounceTimeout = null;
+  let isTyping = false;
+  let lastQuery = '';
+
   searchWorker.onmessage = ({ data }) => {
     const { type, filtered } = data;
-    try {
-      if (type === 'init_done') {
-        workerReady = true;
-        workerSearchQueue.forEach(({ query, searchField }) =>
-          searchWorker.postMessage({ type: 'search', data: { query, searchField } })
-        );
-        workerSearchQueue = [];
-      } else if (type === 'result') {
-        if (!Array.isArray(filtered)) throw new Error("Invalid filtered result from worker");
-        filteredVRCa = filtered;
-        sortResults();
-        renderInitialItems();
-      }
-    } catch (err) {
-      console.error("Worker processing error:", err);
-      filteredVRCa = [];
-      container.innerHTML = '<div class="empty-msg" tabindex="0">An error occurred while processing results.</div>';
-    } finally {
+    if (type === 'init_done') {
+      workerReady = true;
+      workerSearchQueue.forEach(({ query, searchField }) =>
+        searchWorker.postMessage({ type: 'search', data: { query, searchField } })
+      );
+      workerSearchQueue = [];
       setLoading(false);
+    }
+    if (type === 'result') {
+      filteredVRCa = filtered;
+      sortResults();
+      renderInitialItems();
+      setLoading(false);
+      isTyping = false;
     }
   };
 
-  searchWorker.onerror = e => {
-    console.error("Worker error:", e.message);
-    filteredVRCa = [];
-    container.innerHTML = '<div class="empty-msg" tabindex="0">Search failed due to a worker error.</div>';
-    setLoading(false);
-  };
-
   searchWorker.postMessage({ type: 'init', data: { vrcas: vrcasData } });
+  setLoading(true);
 
   const setLoading = isLoading => {
     loadingIndicator.style.display = isLoading ? 'inline-block' : 'none';
@@ -96,35 +87,34 @@
 
   const renderMoreItems = () => {
     if (renderedCount >= filteredVRCa.length) return false;
-    const query = searchBoxEl.value.trim().toLowerCase();
+    const query = searchBoxEl.value.trim();
     const items = filteredVRCa.slice(renderedCount, renderedCount + ITEMS_PER_PAGE);
-    const html = items.map(item => {
-      const { title, author, description, image, avatarId, userId, dateTime, version, size } = item;
-      return `
-        <div class="vrca-card" role="listitem" tabindex="0">
-          <input type="checkbox" class="bulkSelectItem" data-avatarid="${avatarId}" aria-label="Select VRCA item" />
-          <a href="${image}" target="_blank" rel="noopener noreferrer">
-            <img class="vrca-image" loading="lazy" src="${image}" alt="Image of ${title}" onerror="this.src='fallback.png';" />
-          </a>
-          <div class="vrca-details">
-            <div class="vrca-title">
-              <a href="https://vrchat.com/home/avatar/${avatarId}" target="_blank" rel="noopener noreferrer" class="avatar-link">
-                ${highlightText(title, query)}
+
+    const html = items.map(({ title, author, description, image, avatarId, userId, dateTime, version, size }) => `
+      <div class="vrca-card" role="listitem" tabindex="0">
+        <input type="checkbox" class="bulkSelectItem" data-avatarid="${avatarId}" aria-label="Select VRCA item" />
+        <a href="${image}" target="_blank" rel="noopener noreferrer">
+          <img class="vrca-image" loading="lazy" src="${image}" alt="Image of ${title}" onerror="this.src='fallback.png';" />
+        </a>
+        <div class="vrca-details">
+          <div class="vrca-title">
+            <a href="https://vrchat.com/home/avatar/${avatarId}" target="_blank" rel="noopener noreferrer" class="avatar-link">
+              ${highlightText(title, query)}
+            </a>
+            <div class="author-line">
+              By <a href="https://vrchat.com/home/user/${userId}" target="_blank" rel="noopener noreferrer" class="author-link">
+                ${highlightText(author, query)}
               </a>
-              <div class="author-line">
-                By <a href="https://vrchat.com/home/user/${userId}" target="_blank" rel="noopener noreferrer" class="author-link">
-                  ${highlightText(author, query)}
-                </a>
-              </div>
             </div>
-            <div class="meta-right">
-              <div class="date-time">${dateTime}</div>
-              <div>${version} | ${size}</div>
-            </div>
-            <div class="vrca-description">Description: ${highlightText(description, query)}</div>
           </div>
-        </div>`;
-    }).join('');
+          <div class="meta-right">
+            <div class="date-time">${dateTime}</div>
+            <div>${version} | ${size}</div>
+          </div>
+          <div class="vrca-description">Description: ${highlightText(description, query)}</div>
+        </div>
+      </div>`).join('');
+
     container.insertAdjacentHTML('beforeend', html);
     renderedCount += items.length;
     updateExportButtonState();
@@ -141,48 +131,105 @@
   };
 
   const updateExportButtonState = () => {
-    const cmb = [...container.querySelectorAll('.bulkSelectItem')];
-    const checked = cmb.filter(cb => cb.checked);
+    const checkboxes = container.querySelectorAll('.bulkSelectItem');
+    const checked = [...checkboxes].filter(cb => cb.checked);
     exportSelectedBtn.disabled = checked.length === 0;
-    bulkSelectAllCheckbox.checked = checked.length === cmb.length;
-    bulkSelectAllCheckbox.indeterminate = checked.length > 0 && checked.length < cmb.length;
+    bulkSelectAllCheckbox.checked = checked.length === checkboxes.length && checkboxes.length > 0;
+    bulkSelectAllCheckbox.indeterminate = checked.length > 0 && checked.length < checkboxes.length;
   };
 
-  const vectorSearch = () => {
+  container.addEventListener('scroll', () => {
+    if (container.scrollHeight - (container.scrollTop + container.clientHeight) <= 150 &&
+      loadingMoreIndicator.style.display === 'none') {
+      if (renderedCount < filteredVRCa.length) {
+        loadingMoreIndicator.style.display = "block";
+        setTimeout(() => {
+          renderMoreItems();
+          loadingMoreIndicator.style.display = "none";
+        }, 0);
+      }
+    }
+  });
+
+  container.addEventListener('change', e => {
+    if (e.target.classList.contains('bulkSelectItem')) updateExportButtonState();
+  });
+
+  bulkSelectAllCheckbox.addEventListener('change', () => {
+    const checked = bulkSelectAllCheckbox.checked;
+    container.querySelectorAll('.bulkSelectItem').forEach(cb => cb.checked = checked);
+    updateExportButtonState();
+  });
+
+  exportSelectedBtn.addEventListener('click', () => {
+    const checkboxes = container.querySelectorAll('.bulkSelectItem');
+    const selected = [];
+    let idx = 0;
+    for (const cb of checkboxes) {
+      if (cb.checked && filteredVRCa[idx]) selected.push(filteredVRCa[idx]);
+      idx++;
+    }
+    if (!selected.length) return;
+    const blob = new Blob([JSON.stringify(selected, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const dlAnchor = Object.assign(document.createElement('a'), {
+      href: url,
+      download: "vrca_export.json"
+    });
+    document.body.appendChild(dlAnchor);
+    dlAnchor.click();
+    document.body.removeChild(dlAnchor);
+    URL.revokeObjectURL(url);
+  });
+
+  const vectorSearch = (forceSearch = false) => {
     const query = searchBoxEl.value.trim();
     const searchField = searchFieldEl.value;
+
     if (!workerReady) {
       setLoading(true);
       workerSearchQueue.push({ query, searchField });
-    } else {
-      setLoading(true);
-      searchWorker.postMessage({ type: 'search', data: { query, searchField } });
+      return;
     }
+
+    if (!forceSearch && query === lastQuery) return;
+    lastQuery = query;
+    isTyping = true;
+    setLoading(true);
+    searchWorker.postMessage({ type: 'search', data: { query, searchField } });
   };
 
-  // Debounce on input and allow Enter to force search
   searchBoxEl.addEventListener('input', () => {
-    lastTypedTime = Date.now();
     clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(() => {
-      if (Date.now() - lastTypedTime >= TYPING_DEBOUNCE_DELAY) {
-        vectorSearch();
-      }
-    }, TYPING_DEBOUNCE_DELAY);
+      if (!isTyping) return;
+      vectorSearch();
+    }, 600);
   });
 
   searchBoxEl.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       clearTimeout(debounceTimeout);
-      vectorSearch();
+      vectorSearch(true);
+      searchBoxEl.blur();
     }
   });
 
-  sortFieldEl.addEventListener('change', () => { sortResults(); renderInitialItems(); });
-  searchFieldEl.addEventListener('change', vectorSearch);
-  searchBtn.addEventListener('click', vectorSearch);
+  sortFieldEl.addEventListener('change', () => {
+    sortResults();
+    renderInitialItems();
+  });
+
+  searchFieldEl.addEventListener('change', () => {
+    lastQuery = '';
+    vectorSearch(true);
+  });
+
+  searchBtn.addEventListener('click', () => vectorSearch(true));
+
   refreshBtn.addEventListener('click', () => {
     searchBoxEl.value = '';
+    lastQuery = '';
     filteredVRCa = [...vrcasData];
     sortResults();
     renderInitialItems();

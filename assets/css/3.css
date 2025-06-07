@@ -3,6 +3,7 @@ body {
     height: 100%;
     margin: 0;
     padding: 0;
+    cursor: url("../img/cur.png"), auto;
     overflow: hidden;
     background-color: #141414;
     color: #ccc;
@@ -61,7 +62,7 @@ body {
 }
 
 button {
-    cursor: pointer;
+    cursor: url("../img/cur.png"), auto;
     user-select: none;
 }
 
@@ -117,7 +118,7 @@ button:disabled {
     text-decoration: underline;
     color: #e0e0e0;
     outline: none;
-    cursor: pointer;
+    cursor: url("../img/cur.png"), auto;
 }
 
 .author-line {
@@ -156,7 +157,6 @@ button:disabled {
     padding: 0 2px;
 }
 
-/* Loading More Indicator */
 .loading-more {
     text-align: center;
     padding: 12px 0;
@@ -165,7 +165,6 @@ button:disabled {
     user-select: none;
 }
 
-/* Optional spinner for loading more */
 .loading-more-spinner {
     border: 3px solid #3c3c3c;
     border-top: 3px solid #e0e0e0;
@@ -179,20 +178,19 @@ button:disabled {
 }
 
 .loading-spinner {
-  border: 3px solid #3c3c3c;
-  border-top: 3px solid #e0e0e0;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  animation: spin 1s linear infinite;
-  display: inline-block;
-  vertical-align: middle;
-  margin-right: 8px; /* space to right */
+    border: 3px solid #3c3c3c;
+    border-top: 3px solid #e0e0e0;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
 }
 
-
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+    to {
+        transform: rotate(360deg);
+    }
 }
