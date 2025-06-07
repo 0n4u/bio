@@ -305,4 +305,5 @@
   };
 
   await init();
+  setLoading(false);
 })();
