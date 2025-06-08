@@ -214,7 +214,6 @@
   function sortResults() {
     const field = elements.searchField.value;
 
-    // Don't sort ID fields - they should remain in their original order
     if (field === 'avatarId' || field === 'userId') {
       return;
     }
@@ -499,7 +498,6 @@
 
     try {
       if (!query) {
-        // If empty query, show all results
         state.filteredVRCas = [...state.vrcasData];
         sortResults();
         renderAllCards();
@@ -507,9 +505,7 @@
         return;
       }
 
-      // Handle exact ID searches differently
       if (searchField === 'avatarId' || searchField === 'userId') {
-        // For ID fields, we want exact matching (case insensitive)
         const exactMatch = state.vrcasData.filter(item => {
           const idValue = String(item[searchField] || '').toLowerCase();
           return idValue === query.toLowerCase();
@@ -522,7 +518,6 @@
         return;
       }
 
-      // For non-ID fields, use the worker for semantic search
       if (!state.workerReady) {
         state.workerSearchQueue.push({ query, searchField });
         return;
@@ -568,7 +563,6 @@
         console.error('Search error:', error);
         showToast('Search failed, using simple search', 'warning');
 
-        // Fallback to simple text search
         state.filteredVRCas = state.vrcasData.filter(item => {
           const fieldValue = String(item[searchField] || '').toLowerCase();
           const queryLower = query.toLowerCase();
@@ -692,11 +686,9 @@
       await initDB();
       console.log("Database initialized");
 
-      // First try to load from DB
       state.vrcasData = await loadDataFromDB();
       console.log("Data loaded from DB:", state.vrcasData.length);
 
-      // If no data in DB, use the hardcoded data from data.js
       if (state.vrcasData.length === 0 && typeof vrcas !== 'undefined' && vrcas.length > 0) {
         console.log("Using hardcoded data from data.js");
         state.vrcasData = vrcas;
@@ -726,7 +718,6 @@
       console.error('Initialization error:', error);
       showToast('Failed to initialize database', 'error');
 
-      // Fallback to hardcoded data if available
       if (typeof vrcas !== 'undefined' && vrcas.length > 0) {
         state.vrcasData = vrcas;
         state.filteredVRCas = [...state.vrcasData];

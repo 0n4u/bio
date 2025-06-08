@@ -155,7 +155,6 @@ self.onmessage = async ({ data: { type, data } }) => {
             return;
         }
 
-        // Handle ID fields with exact matching
         if (searchField === 'avatarId' || searchField === 'userId') {
             const filtered = vrcasData.filter(item =>
                 (item[searchField] || '').toLowerCase() === normalizedQuery
@@ -164,7 +163,6 @@ self.onmessage = async ({ data: { type, data } }) => {
             return;
         }
 
-        // Fallback to simple text search if model fails
         if (modelLoadFailed || !model) {
             const filtered = vrcasData.filter(item =>
                 (item[searchField] || '').toLowerCase().includes(normalizedQuery)
@@ -173,7 +171,6 @@ self.onmessage = async ({ data: { type, data } }) => {
             return;
         }
 
-        // Proceed with semantic search for non-ID fields
         try {
             postMessage({ type: 'progress', message: 'Processing search...' });
 
