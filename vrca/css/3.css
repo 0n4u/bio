@@ -1,8 +1,8 @@
 :root {
     --bg-color: #141414;
     --panel-bg: #1e1e1e;
-    --primary-color: #2196F3;
-    --primary-color-light: #64B5F6;
+    --primary-color: #2196f3;
+    --primary-color-light: #64b5f6;
     --text-color: #ccc;
     --highlight-bg: #fff176;
     --highlight-text: #111;
@@ -116,7 +116,6 @@ body {
     order: -1;
 }
 
-/* UPDATED .search-wrapper with flex layout and icon button */
 .search-wrapper {
     order: 0;
     position: relative;
@@ -201,6 +200,14 @@ button:disabled {
     height: 200px;
     box-sizing: border-box;
     position: relative;
+    contain: strict;
+    content-visibility: auto;
+}
+
+.vrca-card[data-index] {
+    position: absolute;
+    left: 0;
+    right: 0;
 }
 
 .vrca-card:hover {
@@ -221,6 +228,9 @@ button:disabled {
     object-fit: cover;
     border-radius: 4px;
     transition: opacity 0.3s;
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
 }
 
 .vrca-details {
@@ -345,33 +355,16 @@ button:disabled {
 }
 
 .toast-success {
-    background-color: #4CAF50;
+    background-color: #4caf50;
 }
 
 .toast-warning {
-    background-color: #FF9800;
+    background-color: #ff9800;
 }
 
 .toast-error {
-    background-color: #F44336;
-}
-
-@keyframes fadeInOut {
-    0% {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-
-    10%,
-    90% {
-        opacity: 0.95;
-        transform: translateX(0);
-    }
-
-    100% {
-        opacity: 0;
-        transform: translateX(100%);
-    }
+    background-color: #f44336;
+    animation: shake 0.5s, fadeInOut 5s forwards;
 }
 
 #searchSuggestions {
@@ -434,6 +427,24 @@ button:disabled {
     }
 }
 
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+
+    10%,
+    90% {
+        opacity: 0.95;
+        transform: translateX(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -443,6 +454,24 @@ button:disabled {
     to {
         opacity: 1;
         transform: translateY(0);
+    }
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    20%,
+    60% {
+        transform: translateX(-5px);
+    }
+
+    40%,
+    80% {
+        transform: translateX(5px);
     }
 }
 
@@ -492,6 +521,14 @@ button:focus-visible,
         width: 100%;
         height: auto;
     }
+
+    .search-wrapper {
+        width: 100%;
+    }
+
+    .search-wrapper input[type="text"] {
+        width: 100%;
+    }
 }
 
 .skeleton {
@@ -529,13 +566,16 @@ button:focus-visible,
 }
 
 .skeleton::after {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    background: linear-gradient(90deg,
+            transparent,
+            rgba(255, 255, 255, 0.05),
+            transparent);
     animation: shimmer 1.5s infinite;
 }
 
@@ -547,4 +587,8 @@ button:focus-visible,
     100% {
         transform: translateX(100%);
     }
+}
+
+#scrollContent {
+    will-change: transform;
 }

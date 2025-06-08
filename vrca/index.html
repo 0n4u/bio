@@ -24,7 +24,6 @@
                     </span>
                 </div>
             </div>
-
             <div class="controls" role="search" aria-label="Asset Search Controls">
                 <div class="search-field-group">
                     <select id="searchField" aria-controls="vrcaContainer" aria-label="Search Field">
@@ -41,7 +40,6 @@
                         </svg>
                     </button>
                 </div>
-
                 <div class="search-wrapper">
                     <input type="text" id="searchBox" aria-label="Enter search term" placeholder="Enter search term..."
                         list="searchHistory" />
@@ -62,7 +60,6 @@
                     </button>
                 </div>
             </div>
-
             <div id="bulkToolbar" class="bulk-toolbar">
                 <input type="checkbox" id="bulkSelectAll" aria-label="Select all VRCA items on page" />
                 <label for="bulkSelectAll" class="no-select">Select All</label>
@@ -70,20 +67,17 @@
                 <button id="cancelSearchBtn" aria-label="Cancel current search" style="display: none;">Cancel
                     Search</button>
             </div>
-
             <div id="vrcaContainer" tabindex="0" role="list" aria-live="polite" aria-atomic="true"
                 aria-relevant="additions">
+                <div id="scrollContent" style="position: relative; height: 0;"></div>
             </div>
-
-            <div id="loadingMoreIndicator" class="loading-more" hidden aria-live="polite" aria-atomic="true">
-                Loading more items <span class="loading-spinner" aria-hidden="true"></span>
+            <div id="loadingMoreIndicator" class="loading-more" hidden aria-live="polite" aria-atomic="true"> Loading
+                more items <span class="loading-spinner" aria-hidden="true"></span>
             </div>
         </div>
     </div>
-
     <script src="./js/data.js"></script>
     <script src="./js/app.js"></script>
-
     <script>
         const toastContainer = (() => {
             let container = document.querySelector('.toast-container');
@@ -96,22 +90,20 @@
             }
             return container;
         })();
-
         window.onerror = (msg, url, lineNo, columnNo, error) => {
             const errorMsg = `Error: ${msg}\nURL: ${url}\nLine: ${lineNo}, Column: ${columnNo}\n${error?.stack || ''}`;
             console.error(errorMsg);
-
+            if (toastContainer.children.length > 5) {
+                toastContainer.removeChild(toastContainer.children[0]);
+            }
             const toast = document.createElement('div');
             toast.className = 'toast toast-error';
             toast.textContent = `Error: ${msg}`;
             toast.setAttribute('role', 'alert');
-
             toastContainer.appendChild(toast);
-
             setTimeout(() => {
                 toast.remove();
             }, 8000);
-
             return true;
         };
     </script>
