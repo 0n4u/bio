@@ -9,17 +9,22 @@
     <meta property="og:description" content=":3" />
     <meta name="theme-color" content="#141414" />
     <title>Overdose</title>
-    <link rel="stylesheet" href="../assets/css/3.css" />
-    <script src="../assets/scripts/sparkle.js" defer></script>
-    <!-- Removed problematic preload -->
+    <link rel="stylesheet" href="css/3.css" />
 </head>
 
 <body>
     <div id="flexboxcontainer">
         <div class="panel" role="region" aria-label="VRC Asset Archive Browser">
             <div class="header" id="vrcaHeader" tabindex="0">
-                VRCAssetArchiveBrowser (VRCa Count: 0)
+                <span class="header-title">VRCAssetArchiveBrowser (VRCa Count: 0)</span>
+                <div class="header-status" id="headerStatus">
+                    <span id="loadingText"></span>
+                    <span id="loadingIndicator" aria-live="polite" aria-atomic="true" hidden>
+                        <span class="loading-spinner"></span>
+                    </span>
+                </div>
             </div>
+
             <div class="controls" role="search" aria-label="Asset Search Controls">
                 <div class="search-field-group">
                     <select id="searchField" aria-controls="vrcaContainer" aria-label="Search Field">
@@ -47,19 +52,14 @@
                             <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                         </svg>
                     </button>
-                </div>
-
-                <button id="refreshBtn" class="icon-btn" aria-label="Refresh Results">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                        </path>
-                    </svg>
-                </button>
-
-                <div id="loadingIndicator" aria-live="polite" aria-atomic="true" hidden>
-                    <span class="loading-spinner"></span>
-                    <span id="loadingText">Loading...</span>
+                    <button id="refreshBtn" class="icon-btn" aria-label="Refresh Results">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                            </path>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -70,20 +70,21 @@
                 <button id="cancelSearchBtn" aria-label="Cancel current search" style="display: none;">Cancel
                     Search</button>
             </div>
+
             <div id="vrcaContainer" tabindex="0" role="list" aria-live="polite" aria-atomic="true"
                 aria-relevant="additions">
-                <!-- Cards will be rendered here -->
             </div>
+
             <div id="loadingMoreIndicator" class="loading-more" hidden aria-live="polite" aria-atomic="true">
                 Loading more items <span class="loading-spinner" aria-hidden="true"></span>
             </div>
         </div>
     </div>
-    <script src="./js/data.js" defer></script>
-    <script src="./js/slave.js" defer></script>
-    <script src="./js/app.js" defer></script>
-    <script defer>
-        // Create toast container once on page load
+
+    <script src="./js/data.js"></script>
+    <script src="./js/app.js"></script>
+
+    <script>
         const toastContainer = (() => {
             let container = document.querySelector('.toast-container');
             if (!container) {
@@ -111,7 +112,7 @@
                 toast.remove();
             }, 8000);
 
-            return true; // prevent default error logging
+            return true;
         };
     </script>
 </body>

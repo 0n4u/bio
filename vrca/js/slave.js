@@ -1,6 +1,4 @@
-// slave.js - Updated Version
 try {
-    // Check if we're in a Worker environment
     if (typeof importScripts === 'function') {
         importScripts('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.0.0/dist/tf.min.js');
         importScripts('https://cdn.jsdelivr.net/npm/@tensorflow-models/universal-sentence-encoder@1.3.3/dist/universal-sentence-encoder.min.js');
@@ -15,30 +13,88 @@ try {
     self.close();
 }
 
-const MODEL_LOAD_TIMEOUT = 15000;
+const MODEL_LOAD_TIMEOUT = 30000;
 const EMBEDDING_FIELDS = ['title', 'author', 'description'];
 const SIMILARITY_THRESHOLD_DEFAULT = 0.4;
-const MAX_BATCH_SIZE = 50;
+const DB_NAME = 'VRCAWorkerDB';
+const DB_VERSION = 2;
+const STORE_NAME = 'embeddings';
 
 let model = null;
 let vrcasData = [];
 let modelLoadFailed = false;
+let currentSearchAborted = false;
+let db = null;
+
+async function initDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        request.onerror = (event) => {
+            console.error('Worker DB error:', event.target.error);
+            reject(event.target.error);
+        };
+
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            resolve(db);
+        };
+
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+            }
+        };
+    });
+}
+
+async function getCachedEmbedding(vrcaId, field) {
+    if (!db) return null;
+    return new Promise((resolve) => {
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const key = `${vrcaId}_${field}`;
+        const request = store.get(key);
+        request.onsuccess = () => resolve(request.result ? request.result.embedding : null);
+        request.onerror = () => resolve(null);
+    });
+}
+
+async function cacheEmbedding(vrcaId, field, embedding) {
+    if (!db) return;
+    return new Promise((resolve) => {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const item = {
+            id: `${vrcaId}_${field}`,
+            vrcaId,
+            field,
+            embedding: Array.from(embedding),
+            timestamp: Date.now()
+        };
+
+        store.put(item);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => resolve();
+    });
+}
 
 async function loadModelWithTimeout() {
     const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Model load timeout')), MODEL_LOAD_TIMEOUT)
     );
-
     try {
-        postMessage({ type: 'progress', message: 'Downloading model...' });
-        
-        // Load the model directly without use.load()
+        await initDB();
+
+        postMessage({ type: 'progress', message: 'Loading USE model (50MB)...' });
+
         const loadedModel = await Promise.race([
-            window.use ? window.use.load() : use.load(),
+            use.load(),
             timeoutPromise
         ]);
-        
-        postMessage({ type: 'progress', message: 'Model loaded successfully' });
+
+        postMessage({ type: 'progress', message: 'Model loaded.' });
+
         return loadedModel;
     } catch (error) {
         console.error('Model loading failed:', error);
@@ -61,27 +117,25 @@ function cosineSimilarity(vecA, vecB) {
     return dot / (Math.sqrt(normA) * Math.sqrt(normB)) || 0;
 }
 
-self.onmessage = async ({ data: { type, data, signal } }) => {
-    if (signal?.aborted) return;
+self.onmessage = async ({ data: { type, data } }) => {
+    if (type === 'abort') {
+        currentSearchAborted = true;
+        postMessage({ type: 'result', filtered: [], error: 'Search aborted' });
+        return;
+    }
+    if (currentSearchAborted) {
+        currentSearchAborted = false;
+        postMessage({ type: 'result', filtered: [], error: 'Search aborted' });
+        return;
+    }
 
     if (type === 'init') {
         try {
             vrcasData = data.vrcas || [];
-            
-            if (!model) {
-                model = await loadModelWithTimeout();
-            }
-            
-            postMessage({
-                type: 'init_done',
-                modelReady: !modelLoadFailed
-            });
+            if (!model) model = await loadModelWithTimeout();
+            postMessage({ type: 'init_done', modelReady: !modelLoadFailed });
         } catch (error) {
-            postMessage({
-                type: 'init_done',
-                modelReady: false,
-                error: error.message
-            });
+            postMessage({ type: 'init_done', modelReady: false, error: error.message });
         }
         return;
     }
@@ -90,12 +144,25 @@ self.onmessage = async ({ data: { type, data, signal } }) => {
         const { query = '', searchField } = data;
         const normalizedQuery = query.trim().toLowerCase();
 
+        if (currentSearchAborted) {
+            currentSearchAborted = false;
+            postMessage({ type: 'result', filtered: [], error: 'Search aborted' });
+            return;
+        }
+
         if (!normalizedQuery) {
             postMessage({ type: 'result', filtered: vrcasData });
             return;
         }
 
-        // Fallback substring search if model failed to load
+        if (searchField === 'avatarId' || searchField === 'userId') {
+            const filtered = vrcasData.filter(item =>
+                (item[searchField] || '').toLowerCase() === normalizedQuery
+            );
+            postMessage({ type: 'result', filtered });
+            return;
+        }
+
         if (modelLoadFailed || !model) {
             const filtered = vrcasData.filter(item =>
                 (item[searchField] || '').toLowerCase().includes(normalizedQuery)
@@ -107,33 +174,49 @@ self.onmessage = async ({ data: { type, data, signal } }) => {
         try {
             postMessage({ type: 'progress', message: 'Processing search...' });
 
-            // Embed query
             const queryEmbedding = await model.embed([query]);
             const queryEmbeddingArray = (await queryEmbedding.array())[0];
             queryEmbedding.dispose();
 
-            // Calculate similarity for each item
+            if (currentSearchAborted) {
+                postMessage({ type: 'result', filtered: [], error: 'Search aborted' });
+                return;
+            }
+
             const results = [];
+
             for (let i = 0; i < vrcasData.length; i++) {
-                if (signal?.aborted) {
+                if (currentSearchAborted) {
                     postMessage({ type: 'result', filtered: [], error: 'Search aborted' });
+                    currentSearchAborted = false;
                     return;
                 }
 
-                const text = vrcasData[i][searchField] || '';
+                const vrca = vrcasData[i];
+                const text = vrca[searchField] || '';
                 if (!text) continue;
 
-                const textEmbedding = await model.embed([text]);
-                const textEmbeddingArray = (await textEmbedding.array())[0];
-                textEmbedding.dispose();
+                let textEmbeddingArray = await getCachedEmbedding(vrca.avatarId, searchField);
+
+                if (!textEmbeddingArray) {
+                    const textEmbedding = await model.embed([text]);
+                    textEmbeddingArray = (await textEmbedding.array())[0];
+                    textEmbedding.dispose();
+
+                    await cacheEmbedding(vrca.avatarId, searchField, textEmbeddingArray);
+                }
 
                 const score = cosineSimilarity(queryEmbeddingArray, textEmbeddingArray);
+
                 if (score >= SIMILARITY_THRESHOLD_DEFAULT) {
-                    results.push({
-                        vrca: vrcasData[i],
-                        score
-                    });
+                    results.push({ vrca, score });
                 }
+            }
+
+            if (currentSearchAborted) {
+                postMessage({ type: 'result', filtered: [], error: 'Search aborted' });
+                currentSearchAborted = false;
+                return;
             }
 
             const sortedResults = results
@@ -142,9 +225,11 @@ self.onmessage = async ({ data: { type, data, signal } }) => {
 
             postMessage({
                 type: 'result',
-                filtered: sortedResults.length ? sortedResults : vrcasData.filter(item =>
-                    (item[searchField] || '').toLowerCase().includes(normalizedQuery)
-                )
+                filtered: sortedResults.length
+                    ? sortedResults
+                    : vrcasData.filter(item =>
+                        (item[searchField] || '').toLowerCase().includes(normalizedQuery)
+                    )
             });
         } catch (error) {
             console.error('Search error:', error);
