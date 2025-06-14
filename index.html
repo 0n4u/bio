@@ -14,6 +14,7 @@
     <link rel="preload" href="./assets/scripts/sparkle.js" as="script" />
     <link rel="preload" href="./assets/scripts/log.js" as="script" />
     <link rel="preload" href="./assets/scripts/redirect.js" as="script" />
+    <link rel="preload" as="image" href="assets/img/fluttershy.gif" />
     <link rel="stylesheet" href="./assets/css/1.css" />
     <script src="./assets/scripts/script.js" defer></script>
     <script src="./assets/scripts/redirect.js" defer></script>
@@ -46,8 +47,7 @@
             class="lazy-image"
             src="assets/img/fluttershy.gif"
             alt="Fluttershy animated gif"
-            loading="lazy"
-            style="opacity: 0"
+            loading="eager"
           />
           <div
             id="welcome-text"
@@ -104,9 +104,11 @@
         const welcomeEl = document.getElementById("welcome-text");
         typeText(welcomeEl, "Welcome To Overdose");
         const lazyImg = document.querySelector(".lazy-image");
-        if (lazyImg) {
+        if (lazyImg.complete) {
+          lazyImg.classList.add("loaded");
+        } else {
           lazyImg.addEventListener("load", () => {
-            lazyImg.style.opacity = "1";
+            lazyImg.classList.add("loaded");
           });
         }
       });

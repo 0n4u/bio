@@ -123,7 +123,12 @@ footer {
 }
 
 .lazy-image {
+  opacity: 0;
   transition: opacity 0.3s ease-in-out;
+}
+
+.lazy-image.loaded {
+  opacity: 1;
 }
 
 @keyframes blink {
