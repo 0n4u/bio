@@ -1,15 +1,15 @@
-name: Discord Git Webhook 
+name: Discord Notification
 
 on:
   push:
     branches:
-      - main  # change to your branch if needed
+      - main  # change if you want to trigger on a different branch
 
 jobs:
-  notify-discord:
+  notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Actions for Discord
-        uses: Ilshidur/action-discord@0.3.2
-        with:
-          webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        uses: Ilshidur/action-discord@master
