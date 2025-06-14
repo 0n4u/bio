@@ -9,7 +9,7 @@ jobs:
   notify-discord:
     runs-on: ubuntu-latest
     steps:
-      - name: discord-webhook
-        uses: johnnyhuy/actions-discord-git-webhook@v1.0.4
+      - name: Actions for Discord
+        uses: Ilshidur/action-discord@0.3.2
         with:
           webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
