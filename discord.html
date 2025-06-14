@@ -1,53 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Overdose</title>
 
-<head>
-  <meta charset="utf-8" />
-  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>Overdose</title>
+    <meta content="https://plug.is-a.dev/discord" property="og:url" />
+    <meta content="website" property="og:type" />
+    <meta content="Overdose Discord" property="og:title" />
+    <meta content="Redirecting to Discord..." property="og:description" />
+    <meta content="#141414" name="theme-color" />
 
-  <meta content="https://plug.is-a.dev/discord" property="og:url" />
-  <meta content="website" property="og:type" />
-  <meta content="Overdose Discord" property="og:title" />
-  <meta content="Redirecting to Discord..." property="og:description" />
-  <meta content="#141414" name="theme-color" />
+    <link rel="preload" href="./assets/css/1.css" as="style" />
+    <link rel="preload" href="./assets/scripts/redirect.js" as="script" />
+    <link rel="stylesheet" href="./assets/css/1.css" />
+    <script src="./assets/scripts/redirect.js" defer></script>
+    <script src="./assets/scripts/sparkle.js" defer></script>
+    <script async src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
 
-  <link rel="preload" href="./assets/css/1.css" as="style" />
-  <link rel="preload" href="./assets/scripts/redirect.js" as="script" />
-  <link rel="stylesheet" href="./assets/css/1.css" />
-  <script src="./assets/scripts/redirect.js" defer></script>
-  <script src="./assets/scripts/sparkle.js" defer></script>
-  <script async src="https://cdn.jsdelivr.net/npm/disable-devtool"></script>
+    <script type="text/javascript">
+      let countdown = 3;
 
-  <script type="text/javascript">
-    let countdown = 3;
-
-    function updateCountdown() {
-      document.getElementById("countdown").innerText = countdown;
-      if (countdown === 0) {
-        window.location.href = "https://discord.gg/VsTmwt5J6k";
+      function updateCountdown() {
+        document.getElementById("countdown").innerText = countdown;
+        if (countdown === 0) {
+          window.location.href = "https://discord.gg/VsTmwt5J6k";
+        }
+        countdown--;
       }
-      countdown--;
-    }
+      setInterval(updateCountdown, 1000);
+    </script>
+  </head>
 
-    setInterval(updateCountdown, 1000);
-  </script>
+  <body>
+    <div style="text-align: center; margin-top: 20%">
+      <h1>Redirecting...</h1>
+      <p>
+        Redirecting in
+        <span id="countdown">3</span>
+        seconds...
+      </p>
+    </div>
 
-</head>
-
-<body>
-  <div style="text-align: center; margin-top: 20%">
-    <h1>Redirecting...</h1>
-    <p>
-      Redirecting in
-      <span id="countdown">3</span>
-      seconds...
-    </p>
-  </div>
-
-  <footer id="footer">
-    <p id="footer-text">© 2025 Overdose. All rights reserved.</p>
-  </footer>
-</body>
-
+    <footer id="footer">
+      <p id="footer-text">© 2025 Overdose. All rights reserved.</p>
+    </footer>
+  </body>
 </html>

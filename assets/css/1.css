@@ -122,8 +122,11 @@ footer {
   animation: blink 1s infinite;
 }
 
-@keyframes blink {
+.lazy-image {
+  transition: opacity 0.3s ease-in-out;
+}
 
+@keyframes blink {
   0%,
   100% {
     opacity: 1;

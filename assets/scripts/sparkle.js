@@ -12,7 +12,6 @@ var stary = [];
 var tinyx = [];
 var tinyy = [];
 var tinyv = [];
-
 window.addEventListener("load", function () {
   if (document.getElementById) {
     for (var i = 0; i < sparkles; i++) {
@@ -50,7 +49,9 @@ function sparkle() {
         star[c].style.left = (starx[c] = x) + "px";
         star[c].style.top = (stary[c] = y + 1) + "px";
         star[c].style.clip = "rect(0px, 5px, 5px, 0px)";
-        star[c].childNodes[0].style.backgroundColor = star[c].childNodes[1].style.backgroundColor = newColour();
+        star[c].childNodes[0].style.backgroundColor = star[
+          c
+        ].childNodes[1].style.backgroundColor = newColour();
         star[c].style.visibility = "visible";
         starv[c] = 50;
         break;
@@ -107,7 +108,6 @@ function update_tiny(i) {
     tiny[i].style.visibility = "hidden";
   }
 }
-
 document.onmousemove = mouse;
 
 function mouse(e) {
@@ -120,17 +120,22 @@ function mouse(e) {
     x = event.x + sleft;
   }
 }
-
 window.onscroll = set_scroll;
 
 function set_scroll() {
   if (typeof self.pageYOffset == "number") {
     sdown = self.pageYOffset;
     sleft = self.pageXOffset;
-  } else if (document.body && (document.body.scrollTop || document.body.scrollLeft)) {
+  } else if (
+    document.body &&
+    (document.body.scrollTop || document.body.scrollLeft)
+  ) {
     sdown = document.body.scrollTop;
     sleft = document.body.scrollLeft;
-  } else if (document.documentElement && (document.documentElement.scrollTop || document.documentElement.scrollLeft)) {
+  } else if (
+    document.documentElement &&
+    (document.documentElement.scrollTop || document.documentElement.scrollLeft)
+  ) {
     sleft = document.documentElement.scrollLeft;
     sdown = document.documentElement.scrollTop;
   } else {
@@ -138,23 +143,28 @@ function set_scroll() {
     sleft = 0;
   }
 }
-
 window.onresize = set_width;
 
 function set_width() {
   var sw_min = 999999;
   var sh_min = 999999;
   if (document.documentElement && document.documentElement.clientWidth) {
-    if (document.documentElement.clientWidth > 0) sw_min = document.documentElement.clientWidth;
-    if (document.documentElement.clientHeight > 0) sh_min = document.documentElement.clientHeight;
+    if (document.documentElement.clientWidth > 0)
+      sw_min = document.documentElement.clientWidth;
+    if (document.documentElement.clientHeight > 0)
+      sh_min = document.documentElement.clientHeight;
   }
   if (typeof self.innerWidth == "number" && self.innerWidth) {
-    if (self.innerWidth > 0 && self.innerWidth < sw_min) sw_min = self.innerWidth;
-    if (self.innerHeight > 0 && self.innerHeight < sh_min) sh_min = self.innerHeight;
+    if (self.innerWidth > 0 && self.innerWidth < sw_min)
+      sw_min = self.innerWidth;
+    if (self.innerHeight > 0 && self.innerHeight < sh_min)
+      sh_min = self.innerHeight;
   }
   if (document.body.clientWidth) {
-    if (document.body.clientWidth > 0 && document.body.clientWidth < sw_min) sw_min = document.body.clientWidth;
-    if (document.body.clientHeight > 0 && document.body.clientHeight < sh_min) sh_min = document.body.clientHeight;
+    if (document.body.clientWidth > 0 && document.body.clientWidth < sw_min)
+      sw_min = document.body.clientWidth;
+    if (document.body.clientHeight > 0 && document.body.clientHeight < sh_min)
+      sh_min = document.body.clientHeight;
   }
   if (sw_min === 999999 || sh_min == 999999) {
     sw_min = 800;

@@ -7,13 +7,11 @@ const footerNotice = document.getElementById('footer-notice');
 function userHasClicked() {
   if (hasEntered) return;
   hasEntered = true;
-
   if (flexContainer) flexContainer.style.display = "none";
   if (hiddenContainer) {
     hiddenContainer.style.display = "flex";
     setTimeout(() => hiddenContainer.classList.add("show"), 50);
   }
-
   changeFooterText();
 }
 
@@ -30,9 +28,7 @@ function updateFlicker() {
     element.style.setProperty("--rand", randomOpacity);
   });
 }
-
 setInterval(updateFlicker, 500);
-
 document.addEventListener("DOMContentLoaded", () => {
   if (flexContainer) {
     flexContainer.addEventListener("click", userHasClicked);
