@@ -1,4 +1,4 @@
-name: Discord Git Webhook
+name: Discord Git Webhook 
 
 on:
   push:
