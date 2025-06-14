@@ -6,13 +6,7 @@ import {
   elements,
 } from "./state.js";
 
-import {
-  highlightText,
-  updateButtonStates,
-  showToast,
-  sizeToBytes,
-  debounce,
-} from "./utils.js";
+import { highlightText, showToast, sizeToBytes, debounce } from "./utils.js";
 
 const FALLBACK_IMAGE_SRC =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjZGRkZGRkIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkeT0iLjM1ZW0iIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTFweCIgZmlsbD0iI2ZmZiI+SW1hZ2UgRXJyb3I8L3RleHQ+PC9zdmc+";
@@ -124,16 +118,10 @@ export function renderVisibleCards() {
       card.style.width = "100%";
     }
 
-    const checkbox = card.querySelector(".bulkSelectItem");
-    if (checkbox) {
-      checkbox.checked = state.selectedAvatarIds.has(vrca.avatarId);
-    }
-
     fragment.appendChild(card);
   }
 
   elements.scrollContent.appendChild(fragment);
-
   initImageObserver();
 }
 
@@ -240,21 +228,7 @@ function clearImageTimeout(img) {
 export function createCardElement(vrca, query) {
   const cacheKey = `${vrca.avatarId}_${query || "noquery"}`;
   if (state.renderCache && state.renderCache.has(cacheKey)) {
-    const cachedCard = state.renderCache.get(cacheKey).cloneNode(true);
-    const checkbox = cachedCard.querySelector(".bulkSelectItem");
-    if (checkbox) {
-      checkbox.checked = state.selectedAvatarIds?.has(vrca.avatarId) || false;
-      checkbox.addEventListener("change", (e) => {
-        if (!state.selectedAvatarIds) state.selectedAvatarIds = new Set();
-        if (e.target.checked) {
-          state.selectedAvatarIds.add(vrca.avatarId);
-        } else {
-          state.selectedAvatarIds.delete(vrca.avatarId);
-        }
-        updateButtonStates?.();
-      });
-    }
-    return cachedCard;
+    return state.renderCache.get(cacheKey).cloneNode(true);
   }
 
   const card = document.createElement("div");
@@ -265,23 +239,6 @@ export function createCardElement(vrca, query) {
   card.setAttribute("aria-labelledby", `title-${vrca.avatarId}`);
   card.setAttribute("aria-describedby", `desc-${vrca.avatarId}`);
   card.style.contain = "content";
-
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  checkbox.className = "bulkSelectItem";
-  checkbox.dataset.avatarid = vrca.avatarId;
-  checkbox.setAttribute("aria-label", `Select VRCA item ${vrca.title}`);
-  checkbox.checked = state.selectedAvatarIds?.has(vrca.avatarId) || false;
-  checkbox.addEventListener("change", (e) => {
-    if (!state.selectedAvatarIds) state.selectedAvatarIds = new Set();
-    if (e.target.checked) {
-      state.selectedAvatarIds.add(vrca.avatarId);
-    } else {
-      state.selectedAvatarIds.delete(vrca.avatarId);
-    }
-    updateButtonStates?.();
-  });
-  card.appendChild(checkbox);
 
   const imageContainer = document.createElement("div");
   imageContainer.className = "image-container";
@@ -343,7 +300,8 @@ export function createCardElement(vrca, query) {
   const descDiv = document.createElement("div");
   descDiv.className = "vrca-description";
   descDiv.id = `desc-${vrca.avatarId}`;
-  descDiv.innerHTML = `Description: ${highlightText(vrca.description, query)}`;
+  const descText = vrca.description || "No description available";
+  descDiv.innerHTML = `Description: ${highlightText(descText, query)}`;
   details.appendChild(descDiv);
 
   card.appendChild(details);

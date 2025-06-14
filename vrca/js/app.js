@@ -10,6 +10,15 @@ import {
 } from "./ui.js";
 import { setupEventListeners } from "./events.js";
 import { searchWorker } from "./search.js";
+
+function disableControls(disabled) {
+  elements.searchBox.disabled = disabled;
+  elements.searchBtn.disabled = disabled;
+  elements.refreshBtn.disabled = disabled;
+  elements.sortOrderBtn.disabled = disabled;
+  elements.searchField.disabled = disabled;
+}
+
 async function initializeUI() {
   try {
     initImageObserver();
@@ -19,11 +28,13 @@ async function initializeUI() {
     sortResults();
     updateVisibleRange();
     updateHeaderCount();
+    disableControls(true);
   } catch (error) {
     console.error("UI initialization error:", error);
     throw error;
   }
 }
+
 async function initializeWorker() {
   try {
     searchWorker.postMessage({
@@ -38,26 +49,33 @@ async function initializeWorker() {
     throw error;
   }
 }
+
 async function init() {
   try {
     console.log("Initializing app...");
     setLoading(true, "Initializing...");
+    disableControls(true);
+
     await initDB();
     console.log("Database initialized");
     state.vrcasData = await loadDataFromDB();
     console.log("Data loaded from DB:", state.vrcasData.length);
+
     if (state.vrcasData.length === 0 && vrcas.length > 0) {
       console.log("Using hardcoded data from data.js");
       showToast("Loaded fallback data from file", "info");
       state.vrcasData = vrcas;
     }
+
     state.filteredVRCas = [...state.vrcasData];
     console.log("Total VRCA items:", state.vrcasData.length);
+
     await Promise.all([initializeUI(), initializeWorker()]);
     document.dispatchEvent(new Event("appReady"));
   } catch (error) {
     console.error("Initialization error:", error);
     showToast("Initialization failed, using fallback mode", "error");
+
     if (vrcas.length > 0) {
       console.warn("Using fallback data due to init failure");
       showToast("Using fallback data", "warning");
@@ -67,16 +85,20 @@ async function init() {
       state.vrcasData = [];
       state.filteredVRCas = [];
     }
+
     try {
       await initializeUI();
     } catch (uiError) {
       console.error("Fallback UI init failed:", uiError);
     }
+
     document.dispatchEvent(new Event("appReady"));
   } finally {
     setLoading(false);
+    disableControls(false);
   }
 }
+
 (async () => {
   await init();
 })();

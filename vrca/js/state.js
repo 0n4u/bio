@@ -23,16 +23,7 @@ export const elements = {
   refreshBtn: $("refreshBtn"),
   loadingIndicator: $("loadingIndicator"),
   loadingText: $("loadingText"),
-  bulkSelectAll: $("bulkSelectAll"),
-  exportSelectedBtn: $("exportSelectedBtn"),
-  searchHistoryDropdown: $("searchHistory"),
-  loadingMoreIndicator: $("loadingMoreIndicator"),
   headerTitle: document.querySelector(".header-title"),
-  importBtn: $("importBtn"),
-  exportDBBtn: $("exportDBBtn"),
-  clearDBBtn: $("clearDBBtn"),
-  bulkDeleteBtn: $("bulkDeleteBtn"),
-  anonymizeBtn: $("anonymizeBtn"),
 };
 
 export const state = {
@@ -53,7 +44,6 @@ export const state = {
   intersectionObserver: null,
   imageObserver: null,
   db: null,
-  selectedAvatarIds: new Set(),
   renderCache: new Map(),
   cardPositions: [],
   scrollTop: 0,

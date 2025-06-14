@@ -1,3 +1,11 @@
+function debounce(func, delay) {
+  let timeout;
+  return function (...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), delay);
+  };
+}
+
 import {
   MODEL_LOAD_TIMEOUT,
   EMBEDDING_FIELDS,
@@ -10,19 +18,19 @@ import {
   showToast,
   sizeToBytes,
   highlightText,
-  updateButtonStates,
   updateHeaderCount,
 } from "./utils.js";
 
 import { updateCardPositions, sortResults, updateVisibleRange } from "./ui.js";
 
 export const searchWorker = new Worker("./js/slave.js");
+const SEARCH_DEBOUNCE_DELAY = 600;
 
 searchWorker.onmessage = ({ data }) => {
   const { type, filtered, error, message, progress } = data;
 
   if (type === "progress") {
-    setLoading(true, message, progress);
+    setLoading(true, message);
     return;
   }
 
@@ -71,8 +79,15 @@ searchWorker.onerror = (error) => {
 
 export function handleSearchInput() {
   const query = elements.searchBox.value.trim();
-  if (query.length >= 2) showSearchSuggestions(query);
-  else hideSearchSuggestions();
+  if (query.length >= 2) {
+    showSearchSuggestions(query);
+    debouncedVectorSearch();
+  } else {
+    hideSearchSuggestions();
+    if (query.length === 0) {
+      resetSearch();
+    }
+  }
 }
 
 export function showSearchSuggestions(partial) {
@@ -146,6 +161,11 @@ export function handleSearchKeydown(e) {
     hideSearchSuggestions();
   }
 }
+
+export const debouncedVectorSearch = debounce(
+  () => vectorSearch(true),
+  SEARCH_DEBOUNCE_DELAY
+);
 
 export async function vectorSearch(forceSearch = false) {
   const query = elements.searchBox.value.trim();
@@ -260,10 +280,13 @@ export async function vectorSearch(forceSearch = false) {
 }
 
 export function resetSearch() {
+  const debouncedVectorSearch = debounce(vectorSearch, SEARCH_DEBOUNCE_DELAY);
+
   if (state.currentSearchAbortController) {
     state.currentSearchAbortController.abort();
     state.currentSearchAbortController = null;
   }
+
   setLoading(false);
   elements.searchBox.value = "";
   state.lastQuery = "";
@@ -273,107 +296,8 @@ export function resetSearch() {
   updateVisibleRange();
   updateHeaderCount();
   hideSearchSuggestions();
-}
 
-export async function bulkDelete() {
-  if (state.selectedAvatarIds.size === 0) {
-    showToast("No items selected for deletion", "warning");
-    return;
-  }
-  if (!confirm(`Delete ${state.selectedAvatarIds.size} selected items?`)) {
-    return;
-  }
-  try {
-    const deletedCount = state.selectedAvatarIds.size;
-    const remaining = state.vrcasData.filter(
-      (item) => !state.selectedAvatarIds.has(item.avatarId)
-    );
-
-    state.vrcasData = remaining;
-    state.filteredVRCas = remaining.filter((item) =>
-      state.filteredVRCas.some((f) => f.avatarId === item.avatarId)
-    );
-    state.selectedAvatarIds.clear();
-
-    updateCardPositions();
-    updateVisibleRange();
-    updateHeaderCount();
-
-    showToast(`Deleted ${deletedCount} items`, "success");
-  } catch (error) {
-    console.error("Bulk delete error:", error);
-    showToast("Failed to delete items", "error");
-  }
-}
-
-export async function anonymizeData() {
-  if (state.selectedAvatarIds.size === 0) {
-    showToast("No items selected for anonymization", "warning");
-    return;
-  }
-  if (!confirm(`Anonymize ${state.selectedAvatarIds.size} selected items?`)) {
-    return;
-  }
-  try {
-    const anonymizedCount = state.selectedAvatarIds.size;
-    const anonymized = state.vrcasData.map((item) => {
-      if (state.selectedAvatarIds.has(item.avatarId)) {
-        return {
-          ...item,
-          author: "Anonymous",
-          userId: "usr_anonymous",
-          description: "Anonymized data",
-        };
-      }
-      return item;
-    });
-
-    state.vrcasData = anonymized;
-    state.filteredVRCas = anonymized.filter((item) =>
-      state.filteredVRCas.some((f) => f.avatarId === item.avatarId)
-    );
-    state.selectedAvatarIds.clear();
-
-    updateCardPositions();
-    updateVisibleRange();
-    updateHeaderCount();
-
-    showToast(`Anonymized ${anonymizedCount} items`, "success");
-  } catch (error) {
-    console.error("Anonymization error:", error);
-    showToast("Failed to anonymize data", "error");
-  }
-}
-
-export async function exportSelected() {
-  if (state.selectedAvatarIds.size === 0) {
-    showToast("No items selected for export", "warning");
-    return;
-  }
-
-  try {
-    const selected = state.filteredVRCas.filter((item) =>
-      state.selectedAvatarIds.has(item.avatarId)
-    );
-    const blob = new Blob([JSON.stringify(selected, null, 2)], {
-      type: "application/json",
-    });
-
-    const url = URL.createObjectURL(blob);
-    const dlAnchor = document.createElement("a");
-    dlAnchor.href = url;
-    dlAnchor.download = `vrca_export_${new Date()
-      .toISOString()
-      .slice(0, 10)}.json`;
-
-    document.body.appendChild(dlAnchor);
-    dlAnchor.click();
-    document.body.removeChild(dlAnchor);
-
-    setTimeout(() => URL.revokeObjectURL(url), 100);
-    showToast(`Exported ${selected.length} items`, "success");
-  } catch (error) {
-    console.error("Export failed:", error);
-    showToast("Export failed", "error");
-  }
+  document.querySelectorAll(".highlight").forEach((el) => {
+    el.outerHTML = el.innerHTML;
+  });
 }

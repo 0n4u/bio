@@ -12,12 +12,10 @@ const TRANSPARENT_PLACEHOLDER =
 const ERROR_IMAGE =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMTAwJyBoZWlnaHQ9JzEwMCcgdmlld0JveD0nMCAwIDEwMCAxMDAnIHhtbG5zPSdodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2Zyc+PHJlY3Qgd2lkdGg9JzEwMCUnIGhlaWdodD0nMTAwJScgc3R5bGU9J2ZpbGw6I2VlZScvPjxsaW5lIHgxPScwJyB5MT0nMCcgeDI9JzEwMCcgeTI9JzEwMCcgc3R5bGU9J3N0cm9rZTojY2MwMDAnIHN0cm9rZS13aWR0aDoyJy8+PGxpbmUgeDE9JzEwMCcgeTE9JzAnIHgyPScwJyB5Mj0nMTAwJyBzdHlsZT0nc3Ryb2tlOiNjYzAwMDsgc3Ryb2tlLXdpZHRoOjInLz48L3N2Zz4=";
 
-export function setLoading(isLoading, message = "", progress = 0) {
+export function setLoading(isLoading, message = "") {
   if (isLoading) {
     elements.loadingText.textContent = message;
     elements.loadingIndicator.hidden = false;
-    if (progress > 0) {
-    }
   } else {
     elements.loadingText.textContent = "";
     elements.loadingIndicator.hidden = true;
@@ -52,25 +50,13 @@ export function showToast(message, type = "info", duration = 5000) {
   }, duration);
 }
 
-export function updateButtonStates() {
-  const hasSelection = state.selectedAvatarIds.size > 0;
-  elements.exportSelectedBtn.disabled = !hasSelection;
-  elements.bulkDeleteBtn.disabled = !hasSelection;
-  elements.anonymizeBtn.disabled = !hasSelection;
-}
-
 export function updateHeaderCount() {
   const total = state.vrcasData.length;
   const filtered = state.filteredVRCas.length;
-  const selected = state.selectedAvatarIds.size;
   let countText = `VRCa Count: ${filtered}`;
 
   if (filtered !== total) {
     countText += ` (filtered from ${total})`;
-  }
-
-  if (selected > 0) {
-    countText += ` | Selected: ${selected}`;
   }
 
   elements.headerTitle.textContent = `VRCAssetArchiveBrowser (${countText})`;

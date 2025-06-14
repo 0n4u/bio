@@ -1,15 +1,11 @@
-import { debounce, updateButtonStates } from "./utils.js";
-
+import { debounce } from "./utils.js";
 import { elements, state, DEBOUNCE_DELAY } from "./state.js";
-
 import { updateVisibleRange, toggleSortDirection } from "./ui.js";
-
 import {
   handleSearchInput,
   handleSearchKeydown,
   vectorSearch,
   resetSearch,
-  exportSelected,
 } from "./search.js";
 
 export function setupEventListeners() {
@@ -24,22 +20,6 @@ export function setupEventListeners() {
     }
   });
 
-  elements.bulkSelectAll.addEventListener("change", () => {
-    const checked = elements.bulkSelectAll.checked;
-
-    if (checked) {
-      state.filteredVRCas.forEach((item) => {
-        state.selectedAvatarIds.add(item.avatarId);
-      });
-    } else {
-      state.selectedAvatarIds.clear();
-    }
-
-    updateVisibleRange();
-    updateButtonStates();
-  });
-
-  elements.exportSelectedBtn.addEventListener("click", exportSelected);
   elements.searchBox.addEventListener(
     "input",
     debounce(handleSearchInput, DEBOUNCE_DELAY)
@@ -62,5 +42,13 @@ export function setupEventListeners() {
       e.preventDefault();
       elements.searchBox.focus();
     }
+  });
+
+  document.addEventListener("appReady", () => {
+    elements.searchBox.disabled = false;
+    elements.searchBtn.disabled = false;
+    elements.refreshBtn.disabled = false;
+    elements.sortOrderBtn.disabled = false;
+    elements.searchField.disabled = false;
   });
 }

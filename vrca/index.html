@@ -36,6 +36,7 @@
               id="searchField"
               aria-controls="vrcaContainer"
               aria-label="Search Field"
+              disabled
             >
               <option value="title">Asset Name</option>
               <option value="author">Author</option>
@@ -47,6 +48,7 @@
               class="icon-btn"
               aria-label="Toggle sort order"
               title="Toggle sort order (Ascending/Descending)"
+              disabled
             >
               <svg
                 width="16"
@@ -66,8 +68,14 @@
               id="searchBox"
               aria-label="Enter search term"
               placeholder="Enter search term..."
+              disabled
             />
-            <button id="searchBtn" class="icon-btn" aria-label="Execute Search">
+            <button
+              id="searchBtn"
+              class="icon-btn"
+              aria-label="Execute Search"
+              disabled
+            >
               <svg
                 width="16"
                 height="16"
@@ -83,6 +91,7 @@
               id="refreshBtn"
               class="icon-btn"
               aria-label="Refresh Results"
+              disabled
             >
               <svg
                 width="16"
@@ -98,20 +107,6 @@
               </svg>
             </button>
           </div>
-        </div>
-        <div id="bulkToolbar" class="bulk-toolbar">
-          <input
-            type="checkbox"
-            id="bulkSelectAll"
-            aria-label="Select all VRCA items on page"
-          />
-          <label for="bulkSelectAll" class="no-select">Select All</label>
-          <button
-            id="exportSelectedBtn"
-            aria-label="Export selected VRCA items"
-          >
-            Export Selected
-          </button>
         </div>
         <div
           id="vrcaContainer"
@@ -135,12 +130,6 @@
         </div>
       </div>
     </div>
-    <input
-      type="file"
-      id="importFileInput"
-      accept=".json"
-      style="display: none"
-    />
     <script type="module" src="./js/app.js"></script>
     <script src="./js/console.js"></script>
     <script>
